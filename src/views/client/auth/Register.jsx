@@ -1,36 +1,23 @@
-import React, { useContext, useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import logo_snapbuy from "../../../assets/images/logo_snapbuy.png";
 import logo_google from "../../../assets/images/logo_google.png";
 import logo_facebook from "../../../assets/images/logo_facebook.png";
 import { useTheme } from "../../../Provider/ThemeProvider";
-import { AuthContext } from "../../../contexts/User/AuthContext";
-import { ToastContainer } from "react-toastify";
+import { useAuth } from "../../../contexts/User/AuthContext";
 import HeaderFlexibleView from "../../../components/Header/HeaderFlexibleView";
-import {
-  notifySuccess,
-  notifyWarning,
-  notifyError,
-} from "../../../utils/client/Notify";
+import { useNotify } from "../../../components/Notify/NotifyModal";
 
 const Register = () => {
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setshowConfirmPass] = useState(false);
+
   const [accessibility, setAccessibility] = useState(false);
-  const {
-    authState: { isAuthenticated },
-    registerUser,
-  } = useContext(AuthContext);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/");
-    }
-  });
-
-  console.log(accessibility);
+  const { registerUser } = useAuth();
+  const { notifySuccess, notifyError, notifyWarning } = useNotify();
 
   const handleChangeAccessibility = (e) => {
     setAccessibility(e.target.checked);
@@ -44,10 +31,12 @@ const Register = () => {
   };
 
   const [formData, setFormData] = useState({
-    phone_number: "",
+    account: "",
     password: "",
     confirmPassword: "",
   });
+
+  console.log(formData);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -55,11 +44,17 @@ const Register = () => {
   };
 
   const handleRegister = async () => {
-    const { phone_number, password, confirmPassword } = formData;
+    const { account, password, confirmPassword } = formData;
 
-    const phoneRegex = /^[0-9]{9,11}$/;
-    if (!phoneRegex.test(phone_number)) {
-      notifyWarning("Số điện thoại không hợp lệ", 3000, isDarkMode);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(0|\+84)[0-9]{9}$/;
+
+    if (!emailRegex.test(account) && !phoneRegex.test(account)) {
+      notifyWarning(
+        "Tài khoản phải là email hoặc số điện thoại hợp lệ!",
+        4000,
+        isDarkMode
+      );
       return;
     }
 
@@ -80,26 +75,35 @@ const Register = () => {
 
     if (!accessibility) {
       notifyWarning(
-        "Bạn có đồng ý với chính sách và điều khoản sử dụng của chúng tôi",
+        "Bạn phải đồng ý với chính sách và điều khoản sử dụng của chúng tôi",
         3000,
         isDarkMode
       );
       return;
     }
 
-    try {
-      const response = await registerUser({ phone_number, password });
+    if (emailRegex.test(account.trim())) {
+      navigate("/confirmcode", {
+        state: { email: account.trim(), password: password.trim() },
+      });
+      return;
+    }
 
-      if (!response || response.status !== 200) {
-        notifyError(response.message, 3000, isDarkMode);
+    try {
+      const response = await registerUser({
+        account: account.trim(),
+        password: password.trim(),
+      });
+
+      if (response.success) {
+        notifySuccess("Đăng ký thành công!");
+        navigate("/login");
         return;
       }
-      notifySuccess("Đăng ký thành công!", 3000, isDarkMode);
-      navigate("/login");
+      notifyError(response || "Đăng ký thất bại!");
       return;
     } catch (error) {
-      console.error("Đăng ký thất bại:", error);
-      notifyError("Đăng ký thất bại! Vui lòng thử lại.", 3000, isDarkMode);
+      console.log(error);
     }
   };
 
@@ -109,7 +113,6 @@ const Register = () => {
         isDarkMode ? "bg-background text-dark-100" : "bg-dark-200 text-white"
       }`}
     >
-      <ToastContainer />
       <HeaderFlexibleView title={"Đăng ký"} />
       <div className="w-full container-minus-headerflexible flex items-center justify-center  ">
         <div
@@ -122,7 +125,7 @@ const Register = () => {
             <div className="flex items-centerfont-nunito font-extrabold text-[1.3rem] mt-[5px]">
               {" "}
               <span className="text-primary">Snap</span>
-              <span className="text-black">Buy</span>
+              <span className="">Buy</span>
             </div>
           </Link>
           <div className="w-full flex flex-col py-[20px] pb-[10px]">
@@ -134,22 +137,29 @@ const Register = () => {
             </p>
           </div>
           <div className="flex flex-col mt-[20px] gap-[20px]">
-            <div className="w-full flex items-center border-[1px] rounded-[5px] ">
+            <div
+              className={`w-full flex items-center ${
+                isDarkMode ? "border-[1px]" : "bg-dark-200"
+              } rounded-[5px] `}
+            >
               <div className="p-[10px] flex items-center justify-center">
                 <i className="fa-solid fa-phone"></i>
               </div>
               <input
                 className="w-full bg-transparent outline-none py-[10px] rounded-[5px] text-[0.9rem]"
-                type="tel"
-                pattern="^0[0-9]{9,10}$"
-                placeholder="Nhập số điện thoại"
-                name="phone_number"
-                value={formData.phone_number}
+                type="text"
+                placeholder="Nhập số điện thoại hoặc email"
+                name="account"
+                value={formData.account}
                 onChange={handleChange}
                 required
               />
             </div>
-            <div className="w-full flex items-center border-[1px] rounded-[5px] ">
+            <div
+              className={`w-full flex items-center ${
+                isDarkMode ? "border-[1px]" : "bg-dark-200"
+              } rounded-[5px] `}
+            >
               <div className="p-[10px] flex items-center justify-center">
                 <i className="fa-solid fa-lock"></i>
               </div>
@@ -173,7 +183,11 @@ const Register = () => {
                 )}
               </div>
             </div>
-            <div className="w-full flex items-center border-[1px] rounded-[5px] ">
+            <div
+              className={`w-full flex items-center ${
+                isDarkMode ? "border-[1px]" : "bg-dark-200"
+              } rounded-[5px] `}
+            >
               <div className="p-[10px] flex items-center justify-center">
                 <i className="fa-solid fa-lock"></i>
               </div>

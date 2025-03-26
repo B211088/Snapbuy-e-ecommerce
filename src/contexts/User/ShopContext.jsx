@@ -1,7 +1,12 @@
 import axios from "axios";
 import { createContext, useReducer, useContext, useEffect } from "react";
 import { shopReducer } from "../../reducers/User/ShopReducer";
-import { apiUrl, LOCAL_STORAGE_TOKEN_NAME, SET_SHOP_INFO } from "./contants";
+import {
+  apiUrl,
+  CREATE_PRODUCT,
+  LOCAL_STORAGE_TOKEN_NAME,
+  SET_SHOP_INFO,
+} from "../contants";
 import setAuthToken from "../../utils/User/setAuthToken";
 
 import { useAuth } from "./AuthContext";
@@ -13,10 +18,12 @@ export const ShopContextProvider = ({ children }) => {
     statusShop: "",
     shopLoading: false,
     shopInfo: null,
+    products: null,
   });
+
   const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
   const {
-    authState: { user },
+    authState: { user, roles },
   } = useAuth();
 
   const loadShopInfo = async () => {
@@ -25,6 +32,14 @@ export const ShopContextProvider = ({ children }) => {
         type: SET_SHOP_INFO,
         payload: { statusShop: "", shopInfo: null },
       });
+      return;
+    }
+
+    if (!roles?.includes("shop")) {
+      return;
+    }
+
+    if (roles?.includes("admin")) {
       return;
     }
 
@@ -64,9 +79,27 @@ export const ShopContextProvider = ({ children }) => {
     }
   }, [user]);
 
+  const createProduct = async (formData) => {
+    try {
+      const response = await axios.post(
+        `${apiUrl}/api/v1/product/create_product`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        dispatch({ tpye: CREATE_PRODUCT, payload: response.data });
+        return { success: true, message: response.data };
+      }
+      return { success: false, message: response.message };
+    } catch (error) {
+      return { success: false, message: error };
+    }
+  };
+
   const shopContextData = {
     loadShopInfo,
     shopState,
+    createProduct,
   };
 
   return (

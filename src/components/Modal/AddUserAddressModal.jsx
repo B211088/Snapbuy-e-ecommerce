@@ -5,22 +5,19 @@ import { useTheme } from "../../Provider/ThemeProvider";
 import InputField from "./InputField";
 import Button from "./Button";
 import { AuthContext, useAuth } from "../../contexts/User/AuthContext";
-import { useAddress } from "../../contexts/layout/AddressContext";
-import {
-  notifySuccess,
-  notifyWarning,
-  notifyError,
-} from "../../utils/client/Notify";
+import { useAddress } from "../../contexts/User/AddressContext";
+
 import { ToastContainer } from "react-toastify";
 import LocationSelector from "./LocationSelector";
+import { useNotify } from "../Notify/NotifyModal";
 
-const AddUserAddressModal = ({ onCloseAddUserAddressModal }) => {
+const AddUserAddressModal = ({ onCloseAddUserAddressModal, onSuccess }) => {
   const {
     authState: { user },
   } = useAuth();
 
   const { addAddressReceiver } = useAddress();
-
+  const { notifySuccess, notifyError, notifyWarning } = useNotify();
   const [localAddress, setLocalAddress] = useState({
     province: "",
     district: "",
@@ -50,12 +47,40 @@ const AddUserAddressModal = ({ onCloseAddUserAddressModal }) => {
   };
 
   const handleAddAddress = async () => {
+    const { receiver_name, phone_number, specific_address, village_id } =
+      formData;
+
+    const phoneRegex = /^(0|\+84)[0-9]{9}$/;
+
+    if (!receiver_name) {
+      notifyWarning("Vui lòng nhập tên người nhận!");
+      return;
+    }
+
+    if (!phone_number) {
+      notifyWarning("Vui lòng nhập số điện thoại!");
+      return;
+    }
+    if (!phoneRegex.test(phone_number)) {
+      notifyWarning("Số điện thoại không đúng định dạng!");
+      return;
+    }
+
+    if (!village_id) {
+      notifyWarning("Vui lòng chọn xã, phường, quận!");
+      return;
+    }
+
+    if (!specific_address) {
+      notifyWarning("Vui lòng nhập địa chỉ chi tiết");
+      return;
+    }
+
     try {
       const response = await addAddressReceiver(formData);
-      if (response.status === 200) {
-        notifySuccess("Thêm địa chỉ thành công", 3000, isDarkMode);
-
+      if (response.success) {
         onCloseAddUserAddressModal();
+        onSuccess("Thêm địa chỉ thành công");
       } else notifyWarning("Thêm địa chỉ không thành công!", 3000, isDarkMode);
     } catch (error) {
       notifyError("Có lỗi xảy ra, vui lòng thử lại sau!", 3000, isDarkMode);
@@ -64,9 +89,8 @@ const AddUserAddressModal = ({ onCloseAddUserAddressModal }) => {
 
   return (
     <ModalContainer onCloseModal={onCloseAddUserAddressModal}>
-      <ToastContainer className="z-[10]" />
       <div
-        className={`w-full flex flex-col gap-[2px] py-[20px] px-[30px] border-b-[1px] border-dashed `}
+        className={`w-full flex flex-col gap-[2px] pt-[10px] pb-[15px] px-[30px] border-b-[1px] border-dashed `}
       >
         <h1 className="font-nunito font-bold text-[1.5rem]">
           <span>Thêm địa chỉ giao hàng </span>

@@ -28,11 +28,7 @@ const Header = () => {
       }`}
     >
       <div className="pc:w-[90%] tl:w-full mb:w-full h-[90px] flex items-center gap-[20px] justify-between tl:px-[10px] mb:px-[10px]">
-        <Link
-          to="/"
-          className=" flex items-center gap-[5px] mb:hidden"
-          href="/"
-        >
+        <Link to="/" className=" flex items-center gap-[5px] mb:hidden">
           <img className="w-[40px] object-contain" src={logo} alt="" />
           <div className="font-jersey15 font-black text-[2rem] mt-[10px]">
             <span className="text-primary">SNAP</span>

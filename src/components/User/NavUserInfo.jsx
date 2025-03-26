@@ -28,12 +28,12 @@ const NavUserInfo = () => {
         } rounded-[5px] `}
       >
         <div className="flex items-center gap-[10px]">
-          <div className="w-full h-full flex flex-col justify-center items-center">
+          <div className="w-[32px] h-[32px] flex flex-col justify-center items-center">
             <img
-              className="w-full h-full max-w-[32px] max-h-[32px] rounded-full object-cover cursor-pointer"
+              className="w-full h-full  rounded-full object-cover cursor-pointer"
               src={
                 user.avatar !== "user.png"
-                  ? user.avatar
+                  ? user.avatar_url
                   : " https://as1.ftcdn.net/v2/jpg/03/46/83/96/1000_F_346839683_6nAPzbhpSkIpb8pmAwufkC7c5eD7wYws.jpg"
               }
               alt="Ảnh đại diện của người dùng"

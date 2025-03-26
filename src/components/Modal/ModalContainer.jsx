@@ -9,7 +9,7 @@ const ModalContainer = ({ onCloseModal, children }) => {
       onClick={onCloseModal}
     >
       <div
-        className={`pc:w-[28%] pc:min-w-[460px] mb:w-full mb:min-w-[340px] py-[10px]  rounded-[5px] ${
+        className={`pc:w-[30%] pc:min-w-[480px] mb:w-full mb:min-w-[340px] py-[10px]  rounded-[5px] ${
           isDarkMode ? "text-dark-100 bg-white " : "text-white bg-dark-300"
         }`}
         onClick={(e) => e.stopPropagation()}

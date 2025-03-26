@@ -1,86 +1,116 @@
-import React, { useState } from "react";
-import axios from "axios";
+import { useState, useCallback } from "react";
+import Cropper from "react-easy-crop";
+import { getCroppedImg } from "../../utils/client/cropImage";
 import { useTheme } from "../../Provider/ThemeProvider";
-import { Cloudinary } from "@cloudinary/url-gen";
-import { auto } from "@cloudinary/url-gen/actions/resize";
-import { autoGravity } from "@cloudinary/url-gen/qualifiers/gravity";
-import { AdvancedImage } from "@cloudinary/react";
+import { useAuth } from "../../contexts/User/AuthContext";
 
-const UpdateImgModal = ({ onCloseUpdateImgModal }) => {
+import { ToastContainer } from "react-toastify";
+import { useNotify } from "../Notify/NotifyModal";
+
+const UpdateImgModal = ({
+  onSuccess,
+  onCropped,
+  onUpload,
+  onCloseUpdateImgModal,
+}) => {
+  const { notifySuccess, notifyWarning } = useNotify();
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
+  const [croppedImage, setCroppedImage] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
   const { isDarkMode } = useTheme();
+  const {
+    uploadAvatar,
+    authState: { user },
+  } = useAuth();
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (file) {
       setImage(file);
-      setPreview(URL.createObjectURL(file)); // Hiển thị ảnh trước khi upload
+      setPreview(URL.createObjectURL(file));
     }
   };
 
-  const handleUpload = async () => {
-    if (!image) {
-      alert("Vui lòng chọn ảnh!");
-      return;
-    }
+  const onCropComplete = useCallback(
+    async (_, croppedAreaPixels) => {
+      const croppedImageBlob = await getCroppedImg(preview, croppedAreaPixels);
+      setCroppedImage(croppedImageBlob);
+    },
+    [preview]
+  );
 
-    const formData = new FormData();
-    formData.append("file", image);
-    formData.append("upload_preset", "YOUR_UPLOAD_PRESET"); // Thay thế bằng upload_preset của bạn
-
-    try {
-      const response = await axios.post(
-        "https://api.cloudinary.com/v1_1/dmpfvill9/image/upload",
-        formData
-      );
-
-      const imageUrl = response.data.secure_url;
-      setUploadedImageUrl(imageUrl); // Lưu URL ảnh sau khi upload
-      console.log("Ảnh đã upload thành công:", imageUrl);
-    } catch (error) {
-      console.error("Lỗi khi upload ảnh:", error);
-    }
+  const handleUpload = () => {
+    onCropped(croppedImage);
+    onUpload();
   };
-
-  const cld = new Cloudinary({ cloud: { cloudName: "dmpfvill9" } });
-
-  // Use this sample image or upload your own via the Media Explorer
-  const img = cld
-    .image("cld-sample-5")
-    .format("auto") // Optimize delivery by resizing and applying auto-format and auto-quality
-    .quality("auto")
-    .resize(auto().gravity(autoGravity()).width(500).height(500)); // Transform the image: auto-crop to square aspect_ratio
 
   return (
     <div
-      className="fixed top-0 bottom-0 left-0 right-0 flex items-center justify-center bg-[#2e2e2e27] z-[100]"
+      className="fixed top-0 bottom-0 left-0 right-0 flex items-center justify-center bg-[#2e2e2e27] z-[50] p-[20px]"
       onClick={onCloseUpdateImgModal}
     >
       <div
-        className={`w-[30%]  flex flex-col px-[20px] py-[10px] gap-[20px]  rounded-[5px] ${
+        className={`w-[50%] min-w-[350px] flex flex-col  px-[20px] py-[20px] gap-[20px] rounded-[5px] ${
           isDarkMode ? "text-dark-100 bg-white" : "text-white bg-dark-400"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <input type="file" accept="image/*" onChange={handleImageChange} />
+        <div className="w-full flex flex-col items-center gap-[5px]">
+          <h1 className="font-bold text-[1.2rem]">Cập nhật ảnh đại diện</h1>
+          <p
+            className={`text-[0.9rem] ${
+              isDarkMode ? "text-dark-300" : "text-light-300"
+            }`}
+          >
+            Vui lòng chọn ảnh để làm ảnh đại diện
+          </p>
+        </div>
+        <label
+          htmlFor="file-upload"
+          className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-400 hover:border-blue-500 rounded-lg py-[20px] cursor-pointer transition duration-300"
+        >
+          <span className="text-sm text-dark-700">Chọn ảnh từ thiết bị</span>
+          <input
+            id="file-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+          />
+        </label>
         {preview && (
-          <img src={preview} alt="Preview" style={{ width: "200px" }} />
-        )}
-        <button className="outline-none bg-primary" onClick={handleUpload}>
-          Upload
-        </button>
-        {uploadedImageUrl && (
-          <div>
-            <h3>Ảnh đã upload:</h3>
-            <img
-              src={uploadedImageUrl}
-              alt="Uploaded"
-              style={{ width: "200px" }}
+          <div className="relative w-full h-[50vh]">
+            <Cropper
+              image={preview}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
             />
           </div>
         )}
+        <div className="w-full flex flex-col gap-[10px]">
+          <button
+            className="w-full outline-none bg-primary py-[5px] rounded-[5px] font-nunito font-bold text-light-100"
+            onClick={handleUpload}
+          >
+            Cập nhật
+          </button>
+          <button
+            className={`outline-none py-[5px] rounded-[5px] font-nunito font-bold ${
+              isDarkMode
+                ? "border-[1px] text-dark-100  border-dark-200 "
+                : "bg-dark-300"
+            }`}
+            onClick={onCloseUpdateImgModal}
+          >
+            Thoát
+          </button>
+        </div>
       </div>
     </div>
   );

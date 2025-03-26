@@ -1,12 +1,6 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useReducer,
-} from "react";
+import { createContext, useContext, useEffect, useReducer } from "react";
 import axios from "axios";
-import { AuthContext } from "../User/AuthContext";
+import { AuthContext } from "./AuthContext";
 import {
   ADD_ADDRESS,
   apiUrl,
@@ -17,7 +11,7 @@ import {
   SET_VILLAGES,
   UPDATE_ADDRESS,
   DELETE_ADDRESS,
-} from "../User/contants";
+} from "../contants";
 import { addressReducer } from "../../reducers/User/AddressReducer";
 
 export const AddressContext = createContext();
@@ -30,7 +24,10 @@ export const AddressProvider = ({ children }) => {
     addresses: [],
   });
 
-  const { authState } = useContext(AuthContext);
+  const {
+    authState: { roles, user, isAuthenticated },
+  } = useContext(AuthContext);
+
   const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
 
   const fetchProvinces = async () => {
@@ -38,7 +35,7 @@ export const AddressProvider = ({ children }) => {
       const response = await axios.get(
         `${apiUrl}/api/v1/user_village/get_all_provinces`
       );
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         dispatch({ type: SET_PROVINCES, payload: response.data });
       }
     } catch (error) {
@@ -47,41 +44,46 @@ export const AddressProvider = ({ children }) => {
   };
 
   const fetchDistricts = async (provinceId) => {
+    if (roles?.includes("admin")) return;
+
     try {
       const response = await axios.get(
         `${apiUrl}/api/v1/user_village/get_all_districts/${provinceId}`
       );
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         dispatch({ type: SET_DISTRICTS, payload: response.data });
       }
       return response.data;
     } catch (error) {
-      console.error("Lỗi khi lấy danh sách huyện:", error);
+      return { success: false, error: error };
     }
   };
 
   const fetchVillages = async (districtsId) => {
+    if (roles?.includes("admin")) return;
+
     try {
       const response = await axios.get(
         `${apiUrl}/api/v1/user_village/get_all_villages/${districtsId}`
       );
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         dispatch({ type: SET_VILLAGES, payload: response.data });
         return response.data;
       }
     } catch (error) {
-      console.error("Lỗi khi lấy danh sách huyện:", error);
+      return { success: false, error: error };
     }
   };
 
   useEffect(() => {
-    if (authState.isAuthenticated) {
+    if (isAuthenticated) {
       fetchProvinces();
-      fetchAddress(authState.user.id);
+      fetchAddress(user.id);
     }
-  }, [authState.isAuthenticated]);
+  }, [isAuthenticated]);
 
   const fetchAddress = async (userId) => {
+    if (roles?.includes("admin")) return;
     try {
       const response = await axios.get(
         `${apiUrl}/api/v1/user_village/get_all_address/${userId} `,
@@ -92,13 +94,16 @@ export const AddressProvider = ({ children }) => {
           },
         }
       );
-
-      dispatch({
-        type: SET_ADDRESSES,
-        payload: response.data.addressResponses,
-      });
+      if (response.status >= 200 && response.status < 300) {
+        dispatch({
+          type: SET_ADDRESSES,
+          payload: response.data.addressResponses,
+        });
+        return response.data.addressResponses;
+      }
+      return response;
     } catch (error) {
-      console.error("Lỗi khi thêm địa chỉ:", error);
+      return { success: false, error: error };
     }
   };
 
@@ -114,12 +119,13 @@ export const AddressProvider = ({ children }) => {
           },
         }
       );
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         dispatch({ type: ADD_ADDRESS, payload: response.data });
+        return { success: true, data: response.data };
       }
       return response;
     } catch (error) {
-      console.error("Lỗi khi thêm địa chỉ:", error);
+      return { success: false, error: error };
     }
   };
 
@@ -138,25 +144,22 @@ export const AddressProvider = ({ children }) => {
         }
       );
 
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         dispatch({ type: UPDATE_ADDRESS, payload: response.data });
-        console.log("Thêm địa chỉ thành công", response.data);
+        return { success: true, data: response.data };
       }
 
       return response;
     } catch (error) {
-      console.error(
-        "Lỗi khi thêm địa chỉ:",
-        error.response?.data || error.message
-      );
-      throw error;
+      return { success: false, error: error };
     }
   };
 
-  const deleteAddressReceiver = async (addressId) => {
+  const deleteAddressReceiver = async (addressId, userId) => {
+    console.log("addressId", addressId);
     try {
       const response = await axios.delete(
-        `${apiUrl}/api/v1/user_village/${addressId}`,
+        `${apiUrl}/api/v1/user_village?userAddressId=${addressId}&userId=${userId}`,
 
         {
           headers: {
@@ -165,17 +168,13 @@ export const AddressProvider = ({ children }) => {
           },
         }
       );
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         dispatch({ type: DELETE_ADDRESS, payload: addressId });
-        console.log("Xóa địa chỉ thành công", response.data);
+        return { success: true, message: response };
       }
       return response;
     } catch (error) {
-      console.error(
-        "Lỗi khi xóa địa chỉ:",
-        error.response?.data || error.message
-      );
-      throw error;
+      return { success: false, error: error };
     }
   };
 

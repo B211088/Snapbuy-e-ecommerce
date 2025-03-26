@@ -3,25 +3,28 @@ import { useTheme } from "../../Provider/ThemeProvider";
 import { useAuth } from "../../contexts/User/AuthContext";
 import AddUserAddressModal from "../Modal/AddUserAddressModal";
 import UpdateAddressModal from "../Modal/UpdateAddressModal";
-import { useAddress } from "../../contexts/layout/AddressContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { notifySuccess, notifyWarning } from "../../utils/client/Notify";
 import { ToastContainer } from "react-toastify";
+import { useAddress } from "../../contexts/User/AddressContext";
+import { useNotify } from "../Notify/NotifyModal";
+import { useConfirm } from "../Notify/ConfirmModal";
 
 const Address = () => {
   const { isDarkMode } = useTheme();
-  const navigate = useNavigate();
-  const location = useLocation();
-
+  const { notifySuccess, notifyWarning } = useNotify();
+  const { confirm, ConfirmComponent } = useConfirm();
+  const {
+    authState: { user },
+  } = useAuth();
   const {
     addressState: { addresses },
     deleteAddressReceiver,
   } = useAddress();
 
-  const [addressData, setAddressData] = useState({});
-
+  const navigate = useNavigate();
+  const location = useLocation();
   console.log(addresses);
-
+  const [addressData, setAddressData] = useState({});
   const [showAddUserAddressModal, setShowAddUserAddressModal] = useState(false);
   const [showUpdateUserAddressModal, setShowUpdateUserAddressModal] =
     useState(false);
@@ -57,19 +60,31 @@ const Address = () => {
     }
   }, [location.search]);
 
-  const handleDeletedAddress = async (addressId) => {
-    try {
-      const response = await deleteAddressReceiver(addressId);
-      if (response.status !== 200) {
-        notifyWarning("Could not delete address", 3000);
-        console.log(response);
+  const handleDeletedAddress = (addressId) => {
+    confirm({
+      message: "Bạn có chắc chắn muốn xoá địa chỉ này không?",
+      onConfirm: async () => {
+        try {
+          const response = await deleteAddressReceiver(addressId, user.id);
+          if (response.success) {
+            notifySuccess("Xóa địa chỉ thành công!", 3000);
+            return;
+          }
+          notifyWarning("Không thể xoá địa chỉ", 3000);
+          return;
+        } catch (error) {
+          console.error("Lỗi khi xoá địa chỉ:", error);
+          notifyWarning("Có lỗi xảy ra khi xoá địa chỉ", 3000);
+        }
+      },
+      onCancel: () => {
         return;
-      }
-      notifySuccess("Xóa địa chỉ thành công!", 3000);
-      console.log(response);
-    } catch (error) {
-      console.error("Failed to delete address:", error);
-    }
+      },
+    });
+  };
+
+  const handleSuccess = (message) => {
+    notifySuccess(message);
   };
 
   return (
@@ -81,37 +96,60 @@ const Address = () => {
             : "bg-dark-200 text-white rounded-[5px]"
         }`}
       >
-        <div className="w-full flex items-center justify-between px-[20px] py-[10px] border-b-[1px] border-dashed ">
-          <div className="flex flex-col font-nunito gap-[5px]">
-            <h1 className="font-bold text-[1.4rem]">Địa chỉ giao hàng</h1>
-            <p className="font-normal text-[0.95rem]">
-              Quản lý thông tin địa chỉ giao hàng của bạn
-            </p>
+        {" "}
+        <ConfirmComponent />
+        <div className="w-full flex items-center justify-between px-[20px] py-[12px] border-b-[1px] border-dashed ">
+          <div className="flex items-center  font-nunito gap-[10px]">
+            <div
+              className={`w-[50px] h-[50px] min-w-[50px] flex items-center justify-center rounded-full border-[1px] text-[1.4rem] ${
+                isDarkMode ? "text-dark-300" : "text-light-300"
+              }`}
+            >
+              <i className="fa-solid fa-location-dot"></i>
+            </div>
+            <div className="flex flex-col truncate">
+              <h1 className="font-bold text-[1.2rem]">Địa chỉ giao hàng</h1>
+              <p
+                className={`font-normal text-[0.95rem] ${
+                  isDarkMode ? " text-dark-300" : "text-light-300"
+                }`}
+              >
+                Quản lý thông tin giao hàng của bạn
+              </p>
+            </div>{" "}
+          </div>
+          <div className={`w-full flex  justify-end font-normal text-[1rem] `}>
+            <div
+              className=" flex items-center justify-center  gap-[7px] truncate rounded-[5px]  text-dark-1000  border-[1px] border-dark-700  p-[3px] cursor-pointer"
+              onClick={onOpenAddUserAddressModal}
+            >
+              <div className="w-full flex items-center justify-center gap-[5px] px-[20px] py-[5px]  rounded-[4px] bg-primary">
+                <span className="font-bold text-[0.8rem] uppercase">
+                  Thêm địa chỉ
+                </span>
+              </div>
+            </div>
           </div>
         </div>
         <div className="flex flex-col gap-[20px]">
-          <div className="w-full flex items-center justify-between border-b-[1px] py-[10px] px-[20px]">
-            <div
-              className="flex items-center justify-center gap-[5px]  font-bold px-[10px] py-[10px] text-dark-1000  rounded-[5px] bg-primary  cursor-pointer"
-              onClick={onOpenAddUserAddressModal}
-            >
-              <i className="fa-regular fa-square-plus"></i>
-              <span className="text-[0.9rem]">Thêm địa chỉ</span>
-            </div>
-            <div className="w-2/12 py-[5px] border-[1px] rounded-[5px]">
+          <div className="w-full flex items-center justify-end border-b-[1px] py-[10px] px-[20px]">
+            <div className="  py-[5px] border-[1px] rounded-[5px] font-nunito text-[0.8rem]">
               <select
-                className="w-full px-[10px] outline-none bg-transparent"
+                className="w-full pr-[20px] pl-[10px] outline-none bg-transparent"
                 name=""
                 id=""
               >
                 <option className="outline-none  bg-transparent" value="">
-                  Lọc
+                  Thêm gần đây
+                </option>
+                <option className="outline-none  bg-transparent" value="">
+                  Cũ nhất
                 </option>
               </select>
             </div>
           </div>
           <div className="flex flex-col gap-[20px] px-[20px] ">
-            {addresses ? (
+            {addresses.length > 0 ? (
               <div className="w-full flex flex-col gap-[20px] pb-[20px]">
                 {addresses?.map((address, index) => (
                   <div
@@ -189,7 +227,9 @@ const Address = () => {
               </div>
             ) : (
               <div className="w-full flex justify-center px-[10px] py-[20px] font-nunito ">
-                Bạn chưa có địa chỉ nào
+                <div className="w-full text-center">
+                  Bạn chưa có địa chỉ nhận hàng
+                </div>
               </div>
             )}
           </div>
@@ -197,15 +237,16 @@ const Address = () => {
         {showAddUserAddressModal && (
           <AddUserAddressModal
             onCloseAddUserAddressModal={onCloseAddUserAddressModal}
+            onSuccess={handleSuccess}
           />
         )}{" "}
         {showUpdateUserAddressModal && (
           <UpdateAddressModal
+            onSuccess={handleSuccess}
             address={addressData}
             onCloseUpdateAddressModal={onCloseUpdateAddressModal}
           />
         )}{" "}
-        <ToastContainer />
       </div>
     </div>
   );

@@ -6,15 +6,13 @@ import InputField from "./InputField";
 import SelectField from "./SelectField";
 import DateField from "./DateField";
 import { ToastContainer } from "react-toastify";
-import {
-  notifySuccess,
-  notifyWarning,
-  notifyError,
-} from "../../utils/client/Notify";
+
 import Button from "./Button";
+import { useNotify } from "../Notify/NotifyModal";
 
 const UpdateInfoUserModal = ({ onCloseUpdateInfoUserModal }) => {
   const { isDarkMode } = useTheme();
+  const { notifySuccess, notifyError, notifyWarning } = useNotify();
   const {
     authState: { user },
     updateUserInfo,
@@ -23,21 +21,17 @@ const UpdateInfoUserModal = ({ onCloseUpdateInfoUserModal }) => {
   const [formData, setFormData] = useState({
     account: user.account,
     fullname: user.fullname,
-    email: user.email,
-    phone_number: user.phonenumber,
     gender: user.gender,
     birth_date: user.birth_date ? user.birth_date.split("T")[0] : "",
   });
 
-  console.log(formData);
+  console.log("formData", formData);
 
   useEffect(() => {
     setFormData({
       ...user,
       account: user.account,
       fullname: user.fullname,
-      email: user.email,
-      phone_number: user.phone_number,
       gender: user.gender,
       birth_date: user.birth_date ? user.birth_date.split("T")[0] : "",
     });
@@ -49,26 +43,45 @@ const UpdateInfoUserModal = ({ onCloseUpdateInfoUserModal }) => {
   };
 
   const handleUpdateUserInfo = async () => {
+    const { account, fullname, gender, birth_date } = formData;
+
+    if (!account) {
+      notifyWarning("Vui lòng điền đầy đủ thông tin 1", 3000);
+      return;
+    }
+    if (!fullname) {
+      notifyWarning("Vui lòng điền đầy đủ thông tin 2", 3000);
+      return;
+    }
+    if (gender === null) {
+      notifyWarning("Vui lòng điền đầy đủ thông tin 3", 3000);
+      return;
+    }
+    if (!birth_date) {
+      notifyWarning("Vui lòng điền đầy đủ thông tin 4", 3000);
+      return;
+    }
+
     try {
       const response = await updateUserInfo(user.id, formData);
       if (response.success) {
-        notifySuccess(response.message, 3000);
+        notifySuccess("Cập nhật thông tin thành công");
         onCloseUpdateInfoUserModal();
+        return;
       }
       notifyWarning(response.message, 3000);
       return;
     } catch (error) {
-      notifyWarning(error.message, 3000);
-      console.error(error);
+      notifyError(error.message, 3000);
     }
   };
 
   return (
     <ModalContainer onCloseModal={onCloseUpdateInfoUserModal}>
       <div
-        className={`w-full flex flex-col gap-[2px] py-[20px] px-[30px] border-b-[1px] border-dashed `}
+        className={`w-full flex flex-col gap-[2px] pt-[5px] pb-[15px] px-[30px] border-b-[1px] border-dashed `}
       >
-        <h1 className="font-nunito font-bold text-[1.5rem]">
+        <h1 className="font-nunito font-bold text-[1.2rem] ">
           <span>Cập nhật thông tin</span>
         </h1>
         <p className="text-[0.9rem] ">
@@ -94,26 +107,6 @@ const UpdateInfoUserModal = ({ onCloseUpdateInfoUserModal }) => {
             placeholder: "Nhập Họ và tên",
             name: "fullname",
             value: formData.fullname,
-          }}
-          onChange={handleChange}
-        />
-
-        <InputField
-          payload={{
-            type: "text",
-            placeholder: "Nhập email",
-            name: "email",
-            value: formData.email,
-          }}
-          onChange={handleChange}
-        />
-
-        <InputField
-          payload={{
-            type: "tel",
-            placeholder: "Cập nhật số điện thoại",
-            name: "phone_number",
-            value: formData.phone_number,
           }}
           onChange={handleChange}
         />
@@ -159,7 +152,6 @@ const UpdateInfoUserModal = ({ onCloseUpdateInfoUserModal }) => {
           </button>
         </div>
       </div>{" "}
-      <ToastContainer />
     </ModalContainer>
   );
 };

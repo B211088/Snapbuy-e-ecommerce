@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { useAuth } from "../../contexts/User/AuthContext";
 import {
@@ -12,61 +12,165 @@ import Button from "../Modal/Button";
 import { ToastContainer } from "react-toastify";
 import { useShop } from "../../contexts/User/ShopContext";
 import { useNavigate } from "react-router-dom";
+import Cropper from "react-easy-crop";
+import { getCroppedImg } from "../../utils/client/cropImage";
 
 const FormRegisterShop = () => {
+  const {
+    authState: { user },
+    registerShop,
+    sendCodeToEmail,
+    confirmEmail,
+  } = useAuth();
+
+  const {
+    shopState: { shopInfo, statusShop },
+  } = useShop();
   const navigate = useNavigate();
+
+  const { isDarkMode } = useTheme();
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [croppedImage, setCroppedImage] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [timer, setTimer] = useState(0);
+  const timerRef = useRef(null);
+  const [accessibility, setAccessibility] = useState(false);
+  const [email, setEmail] = useState(user.email);
+  const [disabledEmail, setDisabledEmail] = useState(user.email ? true : false);
+  const [buttonSendCode, setButtonSendCode] = useState(false);
+  const [showInputCodeEmail, setShowInputCodeEmail] = useState(false);
+  const [reSendCode, setReSendCode] = useState(false);
+  const [textShowSendCodeEmail, setTextShowSendCodeEmail] =
+    useState("Gửi mã xác nhận");
+  const [dataConfirmEmail, setDataConfirmEmail] = useState({
+    email: "",
+    code: "",
+  });
+
   const [localAddress, setLocalAddress] = useState({
     province: "",
     district: "",
     village: "",
   });
 
-  const {
-    authState: { user },
-    registerShop,
-  } = useAuth();
+  const [formData, setFormData] = useState({
+    shopName: "",
+    description: "",
+    villageId: parseInt(localAddress.village),
+    specificAddress: "",
+    phoneNumber: "",
+    email: "",
+  });
 
-  const {
-    shopState: { shopInfo, statusShop },
-  } = useShop();
-
-  const { isDarkMode } = useTheme();
-  const [accessibility, setAccessibility] = useState(false);
+  console.log("registershopemail", email);
+  console.log("dataConfirmEmail", dataConfirmEmail);
+  console.log("formData", formData);
 
   const handleChangeAccessibility = (e) => {
     setAccessibility(e.target.checked);
   };
 
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      village_id: parseInt(localAddress.village),
-      email: user.email ? user.email : "",
-    }));
-
-    if (statusShop === "PENDING") {
-      navigate(`/salesregistation/registersuccess/${user.id}`);
-    }
-  }, [localAddress.village, statusShop]);
-
-  const [formData, setFormData] = useState({
-    shop_name: "",
-    description: "",
-    village_id: parseInt(localAddress.village),
-    specific_address: "",
-    phone_number: "",
-    email: "",
-    cmnd: "",
-  });
-
-  console.log(formData);
-  console.log("Shop Info:", statusShop);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
+  const handleImageChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setImage(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
 
+  const onCropComplete = useCallback(
+    async (_, croppedAreaPixels) => {
+      const croppedImageBlob = await getCroppedImg(preview, croppedAreaPixels);
+      setCroppedImage(croppedImageBlob);
+    },
+    [preview]
+  );
+
+  const startCountdown = () => {
+    setTimer(120);
+    setReSendCode(false);
+    setDisabledEmail(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          setReSendCode(true);
+          setDisabledEmail(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isValidEmail = (email) => {
+    return emailRegex.test(email);
+  };
+
+  const handleSendMail = async () => {
+    if (!email) {
+      notifyWarning("Vui lòng nhập địa chỉ email", 3000);
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      notifyWarning("Địa chỉ email không hợp lệ", 3000);
+      return;
+    }
+
+    setTextShowSendCodeEmail("Đang gửi code");
+
+    try {
+      const response = await sendCodeToEmail(user.id, email);
+      if (response.success) {
+        setButtonSendCode(false);
+        startCountdown();
+        setShowInputCodeEmail(true);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleConfirmEmail = async () => {
+    if (!dataConfirmEmail.code) {
+      notifyWarning("Vui lòng nhập mã xác nhận email", 3000);
+      return;
+    }
+
+    try {
+      const response = await confirmEmail(user.id, {
+        email,
+        code: parseInt(dataConfirmEmail.code),
+      });
+
+      if (response.success) {
+        setFormData({
+          ...formData,
+          email: email,
+        });
+        notifySuccess("Xác nhận email thành công!", 3000);
+        clearInterval(timerRef.current);
+        setTimer(0);
+        setShowInputCodeEmail(false);
+        setButtonSendCode(false);
+        setDisabledEmail(true);
+        return;
+      }
+
+      console.log(response.message);
+    } catch (error) {
+      console.error(error);
+    }
+  };
   const handleRegisterShop = async () => {
     if (!accessibility) {
       notifyWarning(
@@ -76,18 +180,48 @@ const FormRegisterShop = () => {
       );
       return;
     }
+
+    if (!croppedImage) {
+      notifyWarning("Vui lòng tải lên ảnh CMND/CCCD", 2000, isDarkMode);
+      return;
+    }
+
     try {
-      const response = await registerShop(user.id, formData);
+      const form = new FormData();
+      Object.entries(formData).forEach(([key, value]) =>
+        form.append(key, value)
+      );
+      form.append("cmnd", croppedImage);
+
+      const response = await registerShop(user.id, form);
       if (response.success) {
         notifySuccess("Đăng ký shop thành công!", 3000);
-        navigate(`/salesregistation/registersuccess/${user.id}`);
+      } else {
+        notifyWarning(response.message, 3000);
       }
-      notifyWarning(response.message, 3000);
-      return;
     } catch (error) {
-      notifyError("Đã xảy ra l��i khi đăng ký shop!", 3000);
+      notifyError("Đã xảy ra lỗi khi đăng ký shop!", 3000);
     }
   };
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      villageId: parseInt(localAddress.village),
+      email: user.email ? user.email : email,
+    }));
+  }, [localAddress.village]);
+
+  useEffect(() => {
+    if (user?.email) {
+      setButtonSendCode(true);
+    }
+  }, [email]);
+
+  useEffect(() => {
+    return () => clearInterval(timerRef.current);
+  }, []);
+
   return (
     <div className="w-full flex flex-col items-center py-[40px]">
       <ToastContainer />
@@ -118,8 +252,8 @@ const FormRegisterShop = () => {
               payload={{
                 type: "text",
                 placeholder: "Nhập tên shop của bạn",
-                name: "shop_name",
-                value: formData.shop_name,
+                name: "shopName",
+                value: formData.shopName,
               }}
               onChange={handleChange}
             />
@@ -154,9 +288,9 @@ const FormRegisterShop = () => {
               id=""
               type="text"
               placeholder="Nhập địa chỉ chi tiết  của bạn"
-              name="specific_address"
+              name="specificAddress"
               onChange={handleChange}
-              value={formData.specific_address}
+              value={formData.specificAddress}
             ></textarea>
           </div>
           <div className="flex items-center">
@@ -164,34 +298,103 @@ const FormRegisterShop = () => {
               payload={{
                 type: "email",
                 placeholder: "Nhập địa chỉ email của bạn",
-                name: "email",
-                value: formData.email,
-                disabled: formData.email ? true : false,
+                value: email,
               }}
-              onChange={handleChange}
+              onChange={(e) => setEmail(e.target.value)}
             />
+            {buttonSendCode && (
+              <div
+                className="flex items-center font-nunito text-[0.8rem] px-[5px] cursor-pointer hover:text-blue-500"
+                onClick={handleSendMail}
+              >
+                <span>{textShowSendCodeEmail}</span>
+              </div>
+            )}
+
+            {reSendCode && (
+              <div
+                className="flex items-center font-nunito text-[0.8rem] px-[5px] cursor-pointer hover:text-blue-500"
+                onClick={handleSendMail}
+              >
+                <span>gửi lại mã</span>
+              </div>
+            )}
+
+            {timer > 0 && (
+              <div
+                className="flex items-center font-nunito text-[0.8rem] px-[5px] cursor-pointer hover:text-blue-500"
+                onClick={handleSendMail}
+              >
+                <span>Mã hết hạn sau: {timer}</span>
+              </div>
+            )}
           </div>
+          {showInputCodeEmail && (
+            <div className="flex items-center gap-[10px]">
+              <div
+                className={`w-7/12  rounded-[5px] py-[5px] ${
+                  isDarkMode ? "border-[1px]" : "bg-dark-400"
+                }`}
+              >
+                <input
+                  className="w-full outline-none border-none bg-transparent text-[0.9rem] px-[10px]"
+                  type="number"
+                  name=""
+                  onChange={(e) =>
+                    setDataConfirmEmail({
+                      ...dataConfirmEmail,
+                      code: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <button
+                className="flex flex-1 items-center justify-center font-nunito text-[0.8rem] cursor-pointer bg-primary py-[8px] px-[20px] rounded-[5px]"
+                onClick={handleConfirmEmail}
+              >
+                <span>Xác nhận</span>
+              </button>
+            </div>
+          )}
           <div className="flex items-center">
             <InputField
               payload={{
                 type: "tel",
                 placeholder: "Nhập số điện thoại của bạn",
-                name: "phone_number",
-                value: formData.phone_number,
+                name: "phoneNumber",
+                value: formData.phoneNumber,
               }}
               onChange={handleChange}
             />
           </div>
-          <div className="flex items-center">
-            <InputField
-              payload={{
-                type: "text",
-                placeholder: "CCCD/CMND",
-                name: "cmnd",
-                value: formData.cmnd,
-              }}
-              onChange={handleChange}
-            />
+          <div className="flex flex-col items-center">
+            <label
+              htmlFor="file-upload"
+              className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-400 hover:border-blue-500 rounded-lg py-[20px] cursor-pointer transition duration-300"
+            >
+              <span className="text-sm text-gray-500">Thêm ảnh CMND/CCCD</span>
+              <input
+                id="file-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </label>
+
+            {preview && (
+              <div className="relative w-full h-[300px]">
+                <Cropper
+                  image={preview}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={16 / 9}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                />
+              </div>
+            )}
           </div>
           <div className="flex gap-[5px] ">
             <div className="">

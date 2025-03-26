@@ -1,4 +1,8 @@
-import { SET_SHOP_INFO, UPDATE_SHOP_INFO } from "../../contexts/User/contants";
+import {
+  CREATE_PRODUCT,
+  SET_SHOP_INFO,
+  UPDATE_SHOP_INFO,
+} from "../../contexts/contants";
 
 export const shopReducer = (state, action) => {
   const { type, payload } = action;
@@ -17,6 +21,12 @@ export const shopReducer = (state, action) => {
           ...state.shopInfo,
           ...payload.shopInfo,
         },
+      };
+
+    case CREATE_PRODUCT:
+      return {
+        ...state,
+        products: [...state.products, payload],
       };
     default:
       return state;

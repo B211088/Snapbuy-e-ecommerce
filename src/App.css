@@ -257,7 +257,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .container-minus-headerflexible {
-  height: calc(100vh - 8px);
+  height: calc(100vh - 60px);
 }
 
 .container-minus-headeradmin {
@@ -265,5 +265,9 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .container-nav-admin {
-  height: calc(100vh - 170px);
+  height: calc(100vh - 105px);
+}
+
+.container-mode-layer1 {
+  height: calc(100vh - 105px);
 }

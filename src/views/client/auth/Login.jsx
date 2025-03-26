@@ -1,26 +1,23 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import logo_snapbuy from "../../../assets/images/logo_snapbuy.png";
 import logo_google from "../../../assets/images/logo_google.png";
 import logo_facebook from "../../../assets/images/logo_facebook.png";
 import { useTheme } from "../../../Provider/ThemeProvider";
 import { useAuth } from "../../../contexts/User/AuthContext";
-import Loading from "../pages/Loading";
-import {
-  notifySuccess,
-  notifyWarning,
-  notifyError,
-} from "../../../utils/client/Notify";
+
 import { ToastContainer } from "react-toastify";
 import HeaderFlexibleView from "../../../components/Header/HeaderFlexibleView";
+import { useNotify } from "../../../components/Notify/NotifyModal";
 
 const Login = () => {
   const {
     loginUser,
-    authState: { isAuthenticated, authLoading },
+    authState: { authLoading },
   } = useAuth();
+  const { notifySuccess, notifyError, notifyWarning } = useNotify();
   const { isDarkMode } = useTheme();
-  const navigate = useNavigate();
+
   const [showPass, setShowPass] = useState(false);
   const [username, setUsername] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -35,17 +32,15 @@ const Login = () => {
       setRememberMe(true);
       setFormData({
         ...formData,
-        phoneOrAccount: savedUsername,
+        account: savedUsername,
       });
     } else {
       setFormData({
         ...formData,
-        phoneOrAccount: "",
+        account: "",
       });
     }
   }, [authLoading]);
-
-  console.log(rememberMe);
 
   const handleRememberMe = (event) => {
     setRememberMe(event.target.checked);
@@ -57,7 +52,7 @@ const Login = () => {
   };
 
   const [formData, setFormData] = useState({
-    phoneOrAccount: "",
+    account: "",
     password: "",
   });
 
@@ -68,48 +63,40 @@ const Login = () => {
 
   const handleLogin = async () => {
     if (rememberMe) {
-      localStorage.setItem("rememberedUsername", formData.phoneOrAccount);
+      localStorage.setItem("rememberedUsername", formData.account);
     } else {
       localStorage.removeItem("rememberedUsername");
     }
-    try {
-      const { phoneOrAccount, password } = formData;
 
-      if (!phoneOrAccount || !password) {
-        notifyWarning("Vui lòng nhập đầy đủ thông tin!", 3000, isDarkMode);
-        return;
-      }
+    const account = formData.account.trim();
+    const password = formData.password.trim();
 
-      const phoneRegex = /^[0-9]{9,11}$/;
-
-      const isPhoneNumber = phoneRegex.test(phoneOrAccount);
-
-      if (isPhoneNumber && !phoneRegex.test(phoneOrAccount)) {
-        notifyWarning("Số điện thoại không hợp lệ!", 3000, isDarkMode);
-        return;
-      }
-
-      if (password.length < 8) {
-        notifyWarning("Mật khẩu phải có ít nhất 8 ký tự!", 3000, isDarkMode);
-        return;
-      }
-
-      const response = await loginUser({ account: phoneOrAccount, password });
-
-      if (!response || response.status !== 200) {
-        notifyError("Sai tài khoản hoặc mật khẩu!", 3000, isDarkMode);
-        return;
-      }
-
+    if (!account || !password) {
+      notifyWarning("Vui lòng nhập đầy đủ thông tin!", 3000, isDarkMode);
       return;
-    } catch (error) {
-      console.error("Lỗi đăng nhập:", error);
+    }
 
-      if (error.response?.status === 403) {
+    if (password.length < 8) {
+      notifyWarning("Mật khẩu phải có ít nhất 8 ký tự!", 3000, isDarkMode);
+      return;
+    }
+
+    try {
+      const response = await loginUser({ ...formData, account, password });
+
+      if (response?.status === 200) {
+        notifySuccess("Đăng nhập thành công!", 3000, isDarkMode);
+        return;
+      }
+
+      notifyError("Sai tài khoản hoặc mật khẩu!", 3000, isDarkMode);
+    } catch (error) {
+      const status = error.response?.status;
+      if (status === 403) {
         notifyError("Bạn không có quyền truy cập!", 3000, isDarkMode);
-      } else if (error.response?.status === 401) {
+      } else if (status === 401) {
         notifyError("Sai tài khoản hoặc mật khẩu!", 3000, isDarkMode);
-      } else if (error.response?.status === 500) {
+      } else if (status === 500) {
         notifyError("Lỗi server, vui lòng thử lại sau!", 3000, isDarkMode);
       } else {
         notifyError("Lỗi hệ thống, vui lòng thử lại!", 3000, isDarkMode);
@@ -125,7 +112,6 @@ const Login = () => {
     >
       <HeaderFlexibleView title={"Đăng nhập"} />
 
-      <ToastContainer />
       <div className="w-full container-minus-headerflexible flex items-center justify-center ">
         {" "}
         <div
@@ -138,7 +124,7 @@ const Login = () => {
             <div className="flex items-centerfont-nunito font-extrabold text-[1.3rem] mt-[5px]">
               {" "}
               <span className="text-primary">Snap</span>
-              <span className="text-black">Buy</span>
+              <span className="">Buy</span>
             </div>
           </Link>
           <div className="w-full flex flex-col py-[20px] pb-[10px]">
@@ -148,20 +134,28 @@ const Login = () => {
             </p>
           </div>
           <div className="flex flex-col mt-[20px] gap-[20px]">
-            <div className="w-full flex items-center border-[1px] rounded-[5px] ">
+            <div
+              className={`w-full flex items-center ${
+                isDarkMode ? "border-[1px]" : "bg-dark-200"
+              } rounded-[5px] `}
+            >
               <div className="p-[10px] flex items-center justify-center">
                 <i className="fa-solid fa-user"></i>
               </div>
               <input
                 className="w-full bg-transparent outline-none px-[0px] py-[10px] rounded-[5px] text-[0.9rem]"
                 type="text"
-                name="phoneOrAccount"
-                value={formData.phoneOrAccount}
+                name="account"
+                value={formData.account}
                 onChange={handleChange}
                 placeholder="Nhập số điện thoại hoặc tên tài khoản"
               />
             </div>
-            <div className="w-full flex items-center border-[1px] rounded-[5px] ">
+            <div
+              className={`w-full flex items-center ${
+                isDarkMode ? "border-[1px]" : "bg-dark-200"
+              } rounded-[5px] `}
+            >
               <div className="p-[10px] flex items-center justify-center">
                 <i className="fa-solid fa-lock"></i>
               </div>

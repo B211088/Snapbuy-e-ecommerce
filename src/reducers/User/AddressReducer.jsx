@@ -6,7 +6,7 @@ import {
   SET_VILLAGES,
   UPDATE_ADDRESS,
   DELETE_ADDRESS,
-} from "../../contexts/User/contants";
+} from "../../contexts/contants";
 
 export const addressReducer = (state, action) => {
   const { type, payload } = action;

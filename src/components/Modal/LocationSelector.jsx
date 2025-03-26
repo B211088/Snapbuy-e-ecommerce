@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useAddress } from "../../contexts/layout/AddressContext";
+import { useAddress } from "../../contexts/User/AddressContext";
 import { useTheme } from "../../Provider/ThemeProvider";
 
 const LocationSelector = ({ localAddress, onChange }) => {

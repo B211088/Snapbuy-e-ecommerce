@@ -9,16 +9,19 @@ import FormRegisterShop from "../components/SallerShop/FormRegisterShop";
 import RegisterSuccess from "../components/SallerShop/RegisterSuccess";
 import ShopDashBoard from "../views/client/pages/Shop/ShopDashBoard";
 import ProtectedRouteShop from "./ProtectedRouteShop";
-import AdminLogin from "../views/admin/auth/AdminLogin";
-import UsersManager from "../components/Admin/display/UsersManager";
-import HomeAdmin from "../components/Admin/display/HomeAdmin";
-import SelllersManager from "../components/Admin/display/SelllersManager";
-import ProtectedRouteAdmin from "./ProtectedRouteAdmin";
-import ProductsManager from "../components/Admin/display/ProductsManager";
-import CategoriesManager from "../components/Admin/display/CategoriesManager";
-const AdminDashBoard = lazy(() =>
-  import("../views/admin/pages/AdminDashBoard")
-);
+import Email from "../components/User/Email";
+import ShopProductsManager from "../components/Shop/display/ShopProductsManager";
+import ShopHome from "../components/Shop/display/ShopHome";
+import ConFirmEmailCode from "../views/client/auth/ConFirmEmailCode";
+import ListAllProduct from "../components/Shop/display/ListAllProduct";
+import ListLiveProduct from "../components/Shop/display/ListLiveProduct";
+import ListBannedProducts from "../components/Shop/display/ListBannedProducts";
+import ListReviewing from "../components/Shop/display/ListReviewing";
+import ListUnpublistProducts from "../components/Shop/display/ListUnpublistProducts";
+import AddProduct from "../components/Shop/display/AddProduct";
+import ShopOrderManager from "../components/Shop/display/ShopOrderManager";
+import ListOrdersPending from "../components/Shop/display/ListOrdersPending";
+
 const Home = lazy(() => import("../views/client/pages/Home"));
 const Login = lazy(() => import("../views/client/auth/Login"));
 const Register = lazy(() => import("../views/client/auth/Register"));
@@ -61,6 +64,17 @@ const router = createBrowserRouter([
       <ProtectedUser>
         <Suspense fallback={<Loading />}>
           <Register />
+        </Suspense>
+      </ProtectedUser>
+    ),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/confirmcode",
+    element: (
+      <ProtectedUser>
+        <Suspense fallback={<Loading />}>
+          <ConFirmEmailCode />
         </Suspense>
       </ProtectedUser>
     ),
@@ -113,6 +127,17 @@ const router = createBrowserRouter([
           <ProtectedRoute>
             <Suspense fallback={<Loading />}>
               <Profile />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+        errorElement: <ErrorPage />,
+      },
+      {
+        path: "account/email",
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <Email />
             </Suspense>
           </ProtectedRoute>
         ),
@@ -193,83 +218,110 @@ const router = createBrowserRouter([
         </Suspense>
       </ProtectedRouteShop>
     ),
-    errorElement: <ErrorPage />,
-  },
-  {
-    path: "/admin",
-    element: (
-      <ProtectedRouteAdmin>
-        <Suspense fallback={<Loading />}>
-          <AdminDashBoard />
-        </Suspense>
-      </ProtectedRouteAdmin>
-    ),
     children: [
       {
         path: "",
         element: (
-          <ProtectedRouteAdmin>
+          <Suspense fallback={<Loading />}>
+            <ShopHome />
+          </Suspense>
+        ),
+      },
+      {
+        path: "products",
+        element: (
+          <Suspense fallback={<Loading />}>
+            <ShopProductsManager />
+          </Suspense>
+        ),
+        children: [
+          {
+            path: "",
+            element: (
+              <Suspense fallback={<Loading />}>
+                <ListAllProduct />
+              </Suspense>
+            ),
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: "list/all",
+            element: (
+              <Suspense fallback={<Loading />}>
+                <ListAllProduct />
+              </Suspense>
+            ),
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: "list/live",
+            element: (
+              <Suspense fallback={<Loading />}>
+                <ListLiveProduct />
+              </Suspense>
+            ),
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: "list/reviewing",
+            element: (
+              <Suspense fallback={<Loading />}>
+                <ListReviewing />
+              </Suspense>
+            ),
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: "list/unpublic",
+            element: (
+              <Suspense fallback={<Loading />}>
+                <ListUnpublistProducts />
+              </Suspense>
+            ),
+            errorElement: <ErrorPage />,
+          },
+        ],
+      },
+      {
+        path: "products/addproduct",
+        element: (
+          <ProtectedRouteShop>
             <Suspense fallback={<Loading />}>
-              <HomeAdmin />
+              <AddProduct />
             </Suspense>
-          </ProtectedRouteAdmin>
+          </ProtectedRouteShop>
+        ),
+      },
+      {
+        path: "products/violation",
+        element: (
+          <Suspense fallback={<Loading />}>
+            <ListBannedProducts />
+          </Suspense>
         ),
         errorElement: <ErrorPage />,
       },
       {
-        path: "usersmanager",
+        path: "orders",
         element: (
-          <ProtectedRouteAdmin>
+          <ProtectedRouteShop>
             <Suspense fallback={<Loading />}>
-              <UsersManager />
+              <ShopOrderManager />
             </Suspense>
-          </ProtectedRouteAdmin>
+          </ProtectedRouteShop>
         ),
-        errorElement: <ErrorPage />,
       },
       {
-        path: "sellersmanager",
+        path: "orders/pending",
         element: (
-          <ProtectedRouteAdmin>
+          <ProtectedRouteShop>
             <Suspense fallback={<Loading />}>
-              <SelllersManager />
+              <ListOrdersPending />
             </Suspense>
-          </ProtectedRouteAdmin>
+          </ProtectedRouteShop>
         ),
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "categoriesmanager",
-        element: (
-          <ProtectedRouteAdmin>
-            <Suspense fallback={<Loading />}>
-              <CategoriesManager />
-            </Suspense>
-          </ProtectedRouteAdmin>
-        ),
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "productsmanager",
-        element: (
-          <ProtectedRouteAdmin>
-            <Suspense fallback={<Loading />}>
-              <ProductsManager />
-            </Suspense>
-          </ProtectedRouteAdmin>
-        ),
-        errorElement: <ErrorPage />,
       },
     ],
-    errorElement: <ErrorPage />,
-  },
-  {
-    path: "/admin/login",
-    element: (
-      <Suspense fallback={<Loading />}>
-        <AdminLogin />
-      </Suspense>
-    ),
     errorElement: <ErrorPage />,
   },
 ]);

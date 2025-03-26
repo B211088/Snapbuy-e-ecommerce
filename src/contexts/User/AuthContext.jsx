@@ -5,9 +5,13 @@ import setAuthToken from "../../utils/User/setAuthToken";
 import {
   apiUrl,
   LOCAL_STORAGE_TOKEN_NAME,
+  LOCAL_STORAGE_USER,
   SET_AUTH,
+  SET_AUTH_LOADING,
+  SET_AVATAR,
+  SET_ROLE,
   UPDATE_AUTH,
-} from "../../contexts/User/contants";
+} from "../../contexts/contants";
 
 export const AuthContext = createContext();
 
@@ -16,7 +20,10 @@ export const AuthContextProvider = ({ children }) => {
     authLoading: true,
     isAuthenticated: false,
     user: null,
+    roles: null,
   });
+
+  const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
 
   const loadUser = async () => {
     const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
@@ -32,20 +39,25 @@ export const AuthContextProvider = ({ children }) => {
     setAuthToken(token);
 
     try {
+      const userId = localStorage.getItem(LOCAL_STORAGE_USER);
       const response = await axios.get(
-        `${apiUrl}/api/v1/user/get_user_info/${token}`,
+        `${apiUrl}/api/v1/user/get_user_info/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         const userData = response.data;
-        console.log(response);
         dispatch({
           type: SET_AUTH,
           payload: { isAuthenticated: true, user: userData },
         });
+        dispatch({
+          type: SET_ROLE,
+          payload: userData.roles,
+        });
+        return;
       } else {
         throw new Error("Unauthorized");
       }
@@ -60,10 +72,6 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    loadUser();
-  }, [localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME)]);
-
   const loginUser = async (userForm) => {
     try {
       const response = await axios.post(
@@ -71,17 +79,32 @@ export const AuthContextProvider = ({ children }) => {
         userForm
       );
 
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
+        const userData = response.data;
         localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, response.data.token);
+        localStorage.setItem(LOCAL_STORAGE_USER, response.data.user.id);
         setAuthToken(response.data.token);
+        dispatch({
+          type: SET_AUTH,
+          payload: { isAuthenticated: true, user: userData },
+        });
+        dispatch({
+          type: SET_ROLE,
+          payload: userData.roles,
+        });
+        dispatch({ type: SET_AUTH_LOADING, payload: false });
         await loadUser();
+        return response;
       }
-
-      return response;
+      return response.data;
     } catch (error) {
       return error.response?.data || { success: false, message: error.message };
     }
   };
+
+  useEffect(() => {
+    loadUser();
+  }, []);
 
   const registerUser = async (userForm) => {
     try {
@@ -90,7 +113,10 @@ export const AuthContextProvider = ({ children }) => {
         userForm
       );
 
-      return response;
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true, message: response.data };
+      }
+      return { success: false, message: response };
     } catch (error) {
       return error.response?.data || { success: false, message: error.message };
     }
@@ -104,11 +130,12 @@ export const AuthContextProvider = ({ children }) => {
       type: SET_AUTH,
       payload: { isAuthenticated: false, user: null },
     });
+    dispatch({ type: SET_ROLE, payload: null });
   };
 
   const updateUserInfo = async (userId, updatedData) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
     try {
-      const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
       if (!token) return { success: false, message: "Bạn chưa đăng nhập" };
 
       const response = await axios.put(
@@ -122,7 +149,7 @@ export const AuthContextProvider = ({ children }) => {
         }
       );
 
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         const updatedUser = response.data;
 
         dispatch({ type: UPDATE_AUTH, payload: updatedUser });
@@ -139,7 +166,6 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   const registerShop = async (userId, formRegisterData) => {
-    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
     try {
       const response = await axios.post(
         `${apiUrl}/api/v1/shop/register/${userId}`,
@@ -147,14 +173,121 @@ export const AuthContextProvider = ({ children }) => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        dispatch({ type: SET_ROLE, payload: ["user", "shop"] });
+        return { success: true, message: response.data.message };
+      }
+      return { success: false, message: response.data.message };
+    } catch (error) {
+      return error.response?.data || { success: false, message: error.message };
+    }
+  };
+
+  const sendCodeToEmail = async (userId, email) => {
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/v1/user_code/send_code?userId=${userId}&email=${email}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }
       );
-      if (response.status !== 200) {
-        console.log(response.message);
+
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true, message: response };
       }
-      return { success: true, message: response.message };
+      return response;
+    } catch (error) {
+      return error.response?.data || { success: false, message: error.message };
+    }
+  };
+
+  const confirmEmail = async (userId, payload) => {
+    if (!payload) {
+      console.log("Không có code");
+      return { success: false, message: "Không có code" };
+    }
+
+    try {
+      const response = await axios.post(
+        `${apiUrl}/api/v1/user_code/user/confirm_code/${userId}`,
+        payload
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true, message: response };
+      }
+      return { success: false, message: response.data.message };
+    } catch (error) {
+      return error.response?.data || { success: false, message: error.message };
+    }
+  };
+
+  const uploadAvatar = async (userId, imageFile) => {
+    if (!imageFile) return { success: false, message: "Chưa chọn ảnh" };
+
+    console.log("Uploading avatar:", imageFile);
+
+    try {
+      dispatch({ type: SET_AUTH_LOADING, payload: true });
+
+      const formData = new FormData();
+      formData.append("file", imageFile);
+
+      const response = await axios.post(
+        `${apiUrl}/api/v1/user/update_avatar/${userId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        dispatch({ type: SET_AVATAR, payload: response.data.avatar_url });
+        return { success: true, data: response.data };
+      } else {
+        throw new Error("Cập nhật ảnh đại diện thất bại");
+      }
+    } catch (error) {
+      console.error("Lỗi upload ảnh:", error);
+      return error.response?.data || { success: false, message: error.message };
+    } finally {
+      dispatch({ type: SET_AUTH_LOADING, payload: false });
+    }
+  };
+
+  const sendMailForRegister = async (email) => {
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/v1/user_code/send_code?email=${email}`
+      );
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true, message: response.data };
+      }
+      return { success: false, message: response.data.message };
+    } catch (error) {
+      return error.response?.data || { success: false, message: error.message };
+    }
+  };
+
+  const confirmCodeMailForRegister = async (formData) => {
+    try {
+      const response = await axios.post(
+        `${apiUrl}/api/v1/user_code/confirm_code`,
+        formData
+      );
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true, message: response.data };
+      }
+      return { success: false, message: response.data.message };
     } catch (error) {
       return error.response?.data || { success: false, message: error.message };
     }
@@ -168,6 +301,11 @@ export const AuthContextProvider = ({ children }) => {
     updateUserInfo,
     authState,
     registerShop,
+    sendCodeToEmail,
+    confirmEmail,
+    uploadAvatar,
+    sendMailForRegister,
+    confirmCodeMailForRegister,
   };
 
   return (

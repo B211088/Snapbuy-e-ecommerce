@@ -9,7 +9,7 @@ export default {
         primary: "#F8AF24",
         background: "#F5F5F5",
         "bg-dark": "#F5F5F5",
-        "border-lgiht": "#ccc",
+        "border-light": "#ccc",
         dark: {
           100: "#000000",
           200: "#2b2b2b",

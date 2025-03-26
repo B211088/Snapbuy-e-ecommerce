@@ -1,24 +1,23 @@
 import { useContext, useEffect, useState } from "react";
 import ModalContainer from "./ModalContainer";
-import { ToastContainer } from "react-toastify";
 import { useTheme } from "../../Provider/ThemeProvider";
-import {
-  notifyError,
-  notifySuccess,
-  notifyWarning,
-} from "../../utils/client/Notify";
-import { useAddress } from "../../contexts/layout/AddressContext";
+import { useAddress } from "../../contexts/User/AddressContext";
 import Button from "./Button";
 import LocationSelector from "./LocationSelector";
 import InputField from "./InputField";
 import { AuthContext } from "../../contexts/User/AuthContext";
+import { useNotify } from "../Notify/NotifyModal";
 
-const UpdateAddressModal = ({ address, onCloseUpdateAddressModal }) => {
+const UpdateAddressModal = ({
+  address,
+  onCloseUpdateAddressModal,
+  onSuccess,
+}) => {
   const {
     authState: { user },
   } = useContext(AuthContext);
   const { updateAddressReceiver } = useAddress();
-
+  const { notifySuccess, notifyError, notifyWarning } = useNotify();
   const [localAddress, setLocalAddress] = useState({
     province: address.province_id,
     district: address.district_id,
@@ -52,24 +51,54 @@ const UpdateAddressModal = ({ address, onCloseUpdateAddressModal }) => {
   };
 
   const handleUpdateAddress = async () => {
+    const { receiver_name, phone_number, specific_address, village_id } =
+      formData;
+
+    const phoneRegex = /^(0|\+84)[0-9]{9}$/;
+
+    if (!receiver_name) {
+      notifyWarning("Vui lòng nhập tên người nhận!");
+      return;
+    }
+
+    if (!phone_number) {
+      notifyWarning("Vui lòng nhập số điện thoại!");
+      return;
+    }
+
+    if (!phoneRegex.test(phone_number)) {
+      notifyWarning("Số điện thoại không đúng định dạng!");
+      return;
+    }
+
+    if (!specific_address) {
+      notifyWarning("Vui lòng nhập địa chỉ chi tiết");
+      return;
+    }
+
+    if (!village_id) {
+      notifyWarning("Vui lòng chọn xã, phường, quận!");
+      return;
+    }
+
     try {
       const response = await updateAddressReceiver(
         address.address_id,
         formData
       );
-      if (response.status !== 200) {
-        notifyWarning("Thêm địa chỉ không thành công!", 3000, isDarkMode);
+      if (response.success) {
+        notifySuccess("Cập nhật địa chỉ thành công");
+        onCloseUpdateAddressModal();
         return;
       }
-      notifySuccess("Thêm địa chỉ thành công", 3000, isDarkMode);
-      onCloseUpdateAddressModal();
+      notifyWarning("Thêm địa chỉ không thành công!", 3000, isDarkMode);
+      return;
     } catch (error) {
       notifyError("Có lỗi xảy ra, vui lòng thử lại sau!", 3000, isDarkMode);
     }
   };
   return (
     <ModalContainer onCloseModal={onCloseUpdateAddressModal}>
-      <ToastContainer className="z-[10]" />
       <div
         className={`w-full flex flex-col gap-[2px] py-[20px] px-[30px] border-b-[1px] border-dashed `}
       >

@@ -1,27 +1,44 @@
 import React, { useState } from "react";
 import LayoutModeBackground from "../../views/client/layout/LayoutModeBackground";
 import { useTheme } from "../../Provider/ThemeProvider";
-import voucher1 from "../../assets/images/sanpham3.jpg";
+
+import { useNotify } from "../Notify/NotifyModal";
 
 const Voucher = () => {
   const { isDarkMode } = useTheme();
+  const { notifySuccess } = useNotify();
   const handleCopy = (code) => {
     navigator.clipboard.writeText(code).then(() => {
-      alert(`Đã sao chép mã: ${code}`);
+      notifySuccess(`Đã sao chéo mã: ${code} Thành công`);
     });
   };
 
   return (
     <div className="w-full flex flex-col">
-      {" "}
       <div
         className={`w-full flex flex-col rounded-[5px] ${
           isDarkMode ? "bg-white text-dark-100" : "bg-dark-200 text-white "
         }`}
       >
-        <div className="w-full flex items-center justify-between px-[20px] py-[10px] border-b-[1px] border-dashed ">
-          <div className="flex flex-col font-nunito gap-[5px]">
-            <h1 className="font-bold text-[1.4rem]">Kho voucher</h1>
+        <div className="w-full flex items-center justify-between px-[20px] py-[12px] border-b-[1px] border-dashed ">
+          <div className="flex items-center  font-nunito gap-[10px]">
+            <div
+              className={`w-[50px] h-[50px] min-w-[50px] flex items-center justify-center rounded-full border-[1px] text-[1.4rem] ${
+                isDarkMode ? "text-dark-300" : "text-light-300"
+              }`}
+            >
+              <i className="fa-solid fa-ticket"></i>
+            </div>
+            <div className="flex flex-col truncate">
+              <h1 className="font-bold text-[1.2rem]">Kho voucher</h1>
+              <p
+                className={`font-normal text-[0.95rem] ${
+                  isDarkMode ? " text-dark-300" : "text-light-300"
+                }`}
+              >
+                Quản lý thông tin voucher của bạn
+              </p>
+            </div>
           </div>
         </div>
         <div className="w-full flex flex-wrap pr-[20px]  pb-[20px]">
