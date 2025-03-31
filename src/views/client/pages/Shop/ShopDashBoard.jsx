@@ -20,7 +20,6 @@ const ShopDashBoard = () => {
     shopState: { shopInfo },
   } = useShop();
 
-  console.log("shopInfo", shopInfo);
   const [statusModal, setStatusModal] = useState(false);
   const handleChangStatusModalExtention = (event) => {
     event.stopPropagation();

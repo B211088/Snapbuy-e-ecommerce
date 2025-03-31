@@ -1,12 +1,12 @@
 import React from "react";
 import { useTheme } from "../../../Provider/ThemeProvider";
-import { useCategories } from "../../../contexts/client/CategoriesContext";
+import { useAppData } from "../../../contexts/client/AppDataContext";
 
 const ListReviewing = () => {
   const { isDarkMode } = useTheme();
   const {
     categoriesState: { categories },
-  } = useCategories();
+  } = useAppData();
   return (
     <div className="w-full flex flex-col px-[20px]">
       <div className="w-full flex gap-[10px] py-[10px]">

@@ -173,9 +173,11 @@ export const AuthContextProvider = ({ children }) => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
         }
       );
+
       if (response.status >= 200 && response.status < 300) {
         dispatch({ type: SET_ROLE, payload: ["user", "shop"] });
         return { success: true, message: response.data.message };

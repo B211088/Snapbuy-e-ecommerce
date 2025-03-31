@@ -4,7 +4,6 @@ import { useTheme } from "../../../Provider/ThemeProvider";
 import { useAuth } from "../../../contexts/User/AuthContext";
 import HeaderFlexibleView from "../../../components/Header/HeaderFlexibleView";
 import { useNotify } from "../../../components/Notify/NotifyModal";
-import { parse } from "postcss";
 
 const ConfirmEmailCode = () => {
   const { isDarkMode } = useTheme();

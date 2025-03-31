@@ -5,7 +5,7 @@ import App from "./App.jsx";
 import { ThemeProvider } from "./Provider/ThemeProvider.jsx";
 import { AuthContextProvider } from "./contexts/User/AuthContext.jsx";
 import { ShopContextProvider } from "./contexts/User/ShopContext.jsx";
-import { CategoriesContextProvider } from "./contexts/client/CategoriesContext.jsx";
+import { AppDataProvider } from "./contexts/client/AppDataContext.jsx";
 import router from "./routes/index.jsx";
 import { AddressProvider } from "./contexts/User/AddressContext.jsx";
 import { NotifyProvider } from "./components/Notify/NotifyModal.jsx";
@@ -13,7 +13,7 @@ import { NotifyProvider } from "./components/Notify/NotifyModal.jsx";
 createRoot(document.getElementById("root")).render(
   <AuthContextProvider>
     <NotifyProvider>
-      <CategoriesContextProvider>
+      <AppDataProvider>
         <ShopContextProvider>
           <AddressProvider>
             <ThemeProvider>
@@ -21,7 +21,7 @@ createRoot(document.getElementById("root")).render(
             </ThemeProvider>
           </AddressProvider>
         </ShopContextProvider>
-      </CategoriesContextProvider>
+      </AppDataProvider>
     </NotifyProvider>
   </AuthContextProvider>
 );

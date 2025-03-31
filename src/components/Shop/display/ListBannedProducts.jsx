@@ -1,13 +1,13 @@
 import React from "react";
 import { useTheme } from "../../../Provider/ThemeProvider";
-import { useCategories } from "../../../contexts/client/CategoriesContext";
 import OutLetContainer from "../../../views/client/layout/OutLetContainer";
+import { useAppData } from "../../../contexts/client/AppDataContext";
 
 const ListBannedProducts = () => {
   const { isDarkMode } = useTheme();
   const {
     categoriesState: { categories },
-  } = useCategories();
+  } = useAppData();
   return (
     <OutLetContainer>
       <div className="w-full flex flex-col  px-[20px] py-[12px] border-b-[1px] border-dashed ">

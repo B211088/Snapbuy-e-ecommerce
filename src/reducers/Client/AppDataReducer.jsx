@@ -1,6 +1,7 @@
 import {
   SET_ALL_CATEGORIES,
   SET_ALL_SUB_CATEGORIES,
+  SET_ALL_SUBCATEGORY_ATTRIBUTES,
 } from "../../contexts/contants";
 
 export const categoriesReducer = (state, action) => {
@@ -35,6 +36,27 @@ export const categoriesReducer = (state, action) => {
         };
       }
     }
+
+    default:
+      return state;
+  }
+};
+
+export const subcategoryAttributeReducer = (state, action) => {
+  switch (action.type) {
+    case SET_ALL_SUBCATEGORY_ATTRIBUTES:
+      return {
+        ...state,
+        categoryAttributes: action.payload.reduce((acc, attr) => {
+          const { subcategory_id } = attr;
+          if (!acc[subcategory_id]) {
+            acc[subcategory_id] = [];
+          }
+          acc[subcategory_id].push(attr);
+          return acc;
+        }, {}),
+        authLoading: true,
+      };
 
     default:
       return state;

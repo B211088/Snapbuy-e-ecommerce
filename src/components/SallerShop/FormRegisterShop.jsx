@@ -14,6 +14,7 @@ import { useShop } from "../../contexts/User/ShopContext";
 import { useNavigate } from "react-router-dom";
 import Cropper from "react-easy-crop";
 import { getCroppedImg } from "../../utils/client/cropImage";
+import ModalCrop from "../Modal/ModalCropImage";
 
 const FormRegisterShop = () => {
   const {
@@ -30,10 +31,13 @@ const FormRegisterShop = () => {
 
   const { isDarkMode } = useTheme();
   const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [croppedImage, setCroppedImage] = useState(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  const [frontCccd, setFrontCccd] = useState(null);
+  const [behindCccdPreview, setBehindCccdPreview] = useState(null);
+  const [behindCccd, setBehindCccd] = useState(null);
+  const [frontCccdPreview, setFrontCccdPreview] = useState(null);
+  const [cropImage, setCropImage] = useState(null);
+  const [cropType, setCropType] = useState(null); // "front" hoặc "behind"
+  const [isCropOpen, setIsCropOpen] = useState(false);
   const [timer, setTimer] = useState(0);
   const timerRef = useRef(null);
   const [accessibility, setAccessibility] = useState(false);
@@ -64,10 +68,6 @@ const FormRegisterShop = () => {
     email: "",
   });
 
-  console.log("registershopemail", email);
-  console.log("dataConfirmEmail", dataConfirmEmail);
-  console.log("formData", formData);
-
   const handleChangeAccessibility = (e) => {
     setAccessibility(e.target.checked);
   };
@@ -76,21 +76,31 @@ const FormRegisterShop = () => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-  const handleImageChange = (event) => {
+
+  const handleImageChange = (event, type) => {
     const file = event.target.files[0];
     if (file) {
-      setImage(file);
-      setPreview(URL.createObjectURL(file));
+      const objectURL = URL.createObjectURL(file);
+      setCropImage(objectURL);
+      setCropType(type);
+      setIsCropOpen(true);
     }
   };
 
-  const onCropComplete = useCallback(
-    async (_, croppedAreaPixels) => {
-      const croppedImageBlob = await getCroppedImg(preview, croppedAreaPixels);
-      setCroppedImage(croppedImageBlob);
-    },
-    [preview]
-  );
+  const handleCropDone = async (croppedImage) => {
+    const blob = await fetch(croppedImage).then((res) => res.blob());
+    const file = new File([blob], `${cropType}.jpg`, { type: "image/jpeg" });
+
+    if (cropType === "front") {
+      const objectURL = URL.createObjectURL(file);
+      setFrontCccd(file);
+      setFrontCccdPreview(objectURL);
+    } else {
+      const objectURL = URL.createObjectURL(file);
+      setBehindCccd(file);
+      setBehindCccdPreview(objectURL);
+    }
+  };
 
   const startCountdown = () => {
     setTimer(120);
@@ -108,11 +118,6 @@ const FormRegisterShop = () => {
         return prev - 1;
       });
     }, 1000);
-  };
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const isValidEmail = (email) => {
-    return emailRegex.test(email);
   };
 
   const handleSendMail = async () => {
@@ -134,9 +139,11 @@ const FormRegisterShop = () => {
         setButtonSendCode(false);
         startCountdown();
         setShowInputCodeEmail(true);
+        return;
       }
+      notifyWarning(response.message || "Gửi mã xác nhận email thất bại", 3000);
     } catch (error) {
-      console.error(error);
+      notifyWarning(error.message || "Lỗi server");
     }
   };
 
@@ -165,33 +172,32 @@ const FormRegisterShop = () => {
         setDisabledEmail(true);
         return;
       }
-
-      console.log(response.message);
+      notifyWarning(response.message || "Xác nhận email thất bại", 3000);
     } catch (error) {
-      console.error(error);
+      notifyWarning(error.message || "Lỗi server");
     }
   };
+
   const handleRegisterShop = async () => {
-    if (!accessibility) {
-      notifyWarning(
-        "Bạn có đồng ý với chính sách và điều khoản sử dụng của chúng tôi",
-        2000,
-        isDarkMode
-      );
+    if (!frontCccd || !behindCccd) {
+      notifyWarning("Vui lòng tải lên cả hai ảnh CMND/CCCD!", 2000);
       return;
     }
 
-    if (!croppedImage) {
-      notifyWarning("Vui lòng tải lên ảnh CMND/CCCD", 2000, isDarkMode);
+    if (!formData.shopName || !formData.phoneNumber || !formData.email) {
+      notifyWarning("Vui lòng điền đầy đủ thông tin cửa hàng!", 2000);
       return;
     }
 
     try {
       const form = new FormData();
-      Object.entries(formData).forEach(([key, value]) =>
-        form.append(key, value)
-      );
-      form.append("cmnd", croppedImage);
+
+      Object.entries(formData).forEach(([key, value]) => {
+        form.append(key, value);
+      });
+
+      form.append("frontCccd", frontCccd);
+      form.append("behindCccd", behindCccd);
 
       const response = await registerShop(user.id, form);
       if (response.success) {
@@ -212,9 +218,20 @@ const FormRegisterShop = () => {
     }));
   }, [localAddress.village]);
 
+  const isValidEmail = (email) => {
+    return /^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/.test(email);
+  };
+
   useEffect(() => {
     if (user?.email) {
       setButtonSendCode(true);
+      return;
+    }
+
+    if (isValidEmail(email)) {
+      setButtonSendCode(true);
+    } else {
+      setButtonSendCode(false);
     }
   }, [email]);
 
@@ -339,6 +356,7 @@ const FormRegisterShop = () => {
                 <input
                   className="w-full outline-none border-none bg-transparent text-[0.9rem] px-[10px]"
                   type="number"
+                  maxLength={6}
                   name=""
                   onChange={(e) =>
                     setDataConfirmEmail({
@@ -368,34 +386,65 @@ const FormRegisterShop = () => {
             />
           </div>
           <div className="flex flex-col items-center">
+            <h1 className="w-full">Mặt trước CCCD/CMND</h1>
             <label
-              htmlFor="file-upload"
+              htmlFor="front-upload"
               className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-400 hover:border-blue-500 rounded-lg py-[20px] cursor-pointer transition duration-300"
             >
               <span className="text-sm text-gray-500">Thêm ảnh CMND/CCCD</span>
               <input
-                id="file-upload"
+                id="front-upload"
                 type="file"
                 accept="image/*"
-                onChange={handleImageChange}
+                onChange={(e) => handleImageChange(e, "front")}
                 className="hidden"
               />
             </label>
-
-            {preview && (
-              <div className="relative w-full h-[300px]">
-                <Cropper
-                  image={preview}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={16 / 9}
-                  onCropChange={setCrop}
-                  onCropComplete={onCropComplete}
-                  onZoomChange={setZoom}
+            {frontCccd && (
+              <div className="w-full p-[20px]">
+                <img
+                  src={frontCccdPreview}
+                  alt="Front CCCD"
+                  className="w-full rounded-[5px]"
                 />
               </div>
             )}
           </div>
+
+          <div className="flex flex-col items-center">
+            <h1 className="w-full">Mặt sau CCCD/CMND</h1>
+            <label
+              htmlFor="behind-upload"
+              className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-400 hover:border-blue-500 rounded-lg py-[20px] cursor-pointer transition duration-300"
+            >
+              <span className="text-sm text-gray-500">Thêm ảnh CMND/CCCD</span>
+              <input
+                id="behind-upload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageChange(e, "behind")}
+                className="hidden"
+              />
+            </label>
+            {behindCccd && (
+              <div className="w-full p-[20px]">
+                <img
+                  src={behindCccdPreview}
+                  alt="Behind CCCD"
+                  className="w-full rounded-[5px]"
+                />
+              </div>
+            )}
+          </div>
+
+          {isCropOpen && (
+            <ModalCrop
+              image={cropImage}
+              onClose={() => setIsCropOpen(false)}
+              onCropDone={handleCropDone}
+            />
+          )}
+
           <div className="flex gap-[5px] ">
             <div className="">
               <input

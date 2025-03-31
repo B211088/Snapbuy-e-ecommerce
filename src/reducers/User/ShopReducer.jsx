@@ -13,6 +13,7 @@ export const shopReducer = (state, action) => {
         shopLoading: false,
         statusShop: payload.statusShop,
         shopInfo: payload.shopInfo,
+        products: payload.products || [],
       };
     case UPDATE_SHOP_INFO:
       return {
@@ -22,11 +23,12 @@ export const shopReducer = (state, action) => {
           ...payload.shopInfo,
         },
       };
-
     case CREATE_PRODUCT:
       return {
         ...state,
-        products: [...state.products, payload],
+        products: Array.isArray(state.products)
+          ? [...state.products, payload]
+          : [payload],
       };
     default:
       return state;

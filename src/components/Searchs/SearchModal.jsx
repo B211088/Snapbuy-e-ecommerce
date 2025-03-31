@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../Provider/ThemeProvider";
-import { useCategories } from "../../contexts/client/CategoriesContext";
+
+import { useAppData } from "../../contexts/client/AppDataContext";
+
 const SearchModal = ({ onCloseSearchModal }) => {
   const [subCategories, setSubCategories] = useState({});
   const { isDarkMode, toggleTheme } = useTheme();
@@ -17,9 +19,11 @@ const SearchModal = ({ onCloseSearchModal }) => {
   }, []);
 
   const {
-    categoritesState: { categories, subcategories },
+    categoriesState: { categories, subcategories },
     getSubCategories,
-  } = useCategories();
+  } = useAppData();
+
+  console.log(categories);
 
   const getSubByCategoryId = (categoryId) => {
     return (

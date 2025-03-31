@@ -33,6 +33,8 @@ const UpdateImgModal = ({
     }
   };
 
+  console.log(image);
+
   const onCropComplete = useCallback(
     async (_, croppedAreaPixels) => {
       const croppedImageBlob = await getCroppedImg(preview, croppedAreaPixels);
