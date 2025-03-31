@@ -1,20 +1,10 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
 import Header from "../../component/Header/Header";
 import NavDashboard from "../../component/Nav/NavDashBoard";
 import LayoutModeBackground from "../../component/Layout/LayoutModeBackGround";
-import { useCategories } from "../../contexts/CategoriesContext";
 
 const AdminDashBoard = () => {
-  const {
-    authState: { user },
-  } = useAuth();
-
-  const {
-    categoriesState: { categories },
-  } = useCategories();
-
   return (
     <LayoutModeBackground>
       <div className="w-full min-h-[100vh] flex flex-col items-center ">
@@ -52,7 +42,7 @@ const navList = [
     label: "Quản lý sản phẩm",
     menuId: "products",
     items: [
-      { id: 1, label: "Nghành hàng", href: "/categoriesmanagement" },
+      { id: 1, label: "Nghành hàng", href: "/industrysmanagement/categories" },
       { id: 2, label: "Sản phẩm", href: "/produtsmanagement" },
     ],
     icon: "fa-solid fa-clipboard-list",

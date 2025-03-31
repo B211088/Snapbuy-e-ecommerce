@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import InputField from "./InputField";
-
 import ModalContainer from "./ModalContainer";
-import { useCategories } from "../../contexts/CategoriesContext";
 import { useNotify } from "../Notify/NotifyModal";
 import { useTheme } from "../../Provider/ThemeProvider";
+import { useAdminManager } from "../../contexts/AdminContext";
 
-const AddCategory = ({ onCloseModalAddCategory, onSuccess }) => {
+const AddCategory = ({ onCloseModalAddCategory }) => {
   const { isDarkMode } = useTheme();
   const { notifySuccess, notifyWarning } = useNotify();
-  const { addCategory } = useCategories();
+  const { addCategory } = useAdminManager();
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -36,7 +35,7 @@ const AddCategory = ({ onCloseModalAddCategory, onSuccess }) => {
     try {
       const response = await addCategory(formData);
       if (response.success) {
-        onSuccess(`Thêm Nghành hàng ${response.data.name} thành công`);
+        notifySuccess(`Thêm Nghành hàng ${response.name} thành công`);
         onCloseModalAddCategory();
         return;
       }
@@ -49,15 +48,15 @@ const AddCategory = ({ onCloseModalAddCategory, onSuccess }) => {
 
   return (
     <ModalContainer onCloseModal={onCloseModalAddCategory}>
-      <div className="w-full flex flex-col px-[20px] ">
-        <h1>Thêm loại sản phẩm</h1>
-        <p>Nhập thông tin và bấm xác nhận</p>
+      <div className="w-full flex flex-col px-[20px] pt-[10px] font-nunito ">
+        <h1 className="text-[1.2rem] font-bold pb-[5px]">Thêm nghành hàng </h1>
+        <p className="text-[0.9rem]">Nhập thông tin và bấm xác nhận</p>
       </div>
-      <div className="w-full flex flex-col gap-[20px] pt-[20px] pb-[20px] px-[20px]">
+      <div className="w-full flex flex-col gap-[20px] pt-[20px] pb-[15px] px-[20px]">
         <InputField
           payload={{
             type: "text",
-            placeholder: "Nhập tên loại",
+            placeholder: "Nhập tên nghành hàng",
             name: "name",
             value: formData.name,
             required: true,
@@ -67,7 +66,7 @@ const AddCategory = ({ onCloseModalAddCategory, onSuccess }) => {
         <InputField
           payload={{
             type: "text",
-            placeholder: "Nhập mô tả loại",
+            placeholder: "Nhập mô nghành hàng",
             name: "description",
             value: formData.description,
             required: true,
@@ -75,7 +74,7 @@ const AddCategory = ({ onCloseModalAddCategory, onSuccess }) => {
           onChange={handleChange}
         />
         <button
-          className="w-full py-[8px] px-[30px] bg-primary text-white font-bold rounded-md  transition-all duration-300"
+          className="w-full py-[7px] px-[30px] bg-primary text-white font-bold rounded-md  transition-all duration-300"
           onClick={handleAddCategory}
         >
           Xác nhận

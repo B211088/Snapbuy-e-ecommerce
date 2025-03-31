@@ -10,8 +10,11 @@ import ProtectedRoute from "./Protected/ProtectedRoute";
 import UsersManager from "../component/Display/UsersManager";
 import Home from "../component/Display/Home";
 import SelllersManager from "../component/Display/SellersManager";
-import CategoriesManager from "../component/Display/CategoriesManager";
+
 import ProductsManager from "../component/Display/ProductsManager";
+import IndustryManager from "../component/Display/IndustryManager";
+import Category from "../component/Display/Category";
+import AttributeManager from "../component/Display/AttributeManager";
 
 const router = createBrowserRouter([
   {
@@ -45,6 +48,7 @@ const router = createBrowserRouter([
             </Suspense>
           </ProtectedAuth>
         ),
+        errorElement: <ErrorPage />,
       },
       {
         path: "usersmanagement",
@@ -55,6 +59,7 @@ const router = createBrowserRouter([
             </Suspense>
           </ProtectedAuth>
         ),
+        errorElement: <ErrorPage />,
       },
       {
         path: "sellersmanagement",
@@ -65,16 +70,42 @@ const router = createBrowserRouter([
             </Suspense>
           </ProtectedAuth>
         ),
+        errorElement: <ErrorPage />,
       },
       {
-        path: "categoriesmanagement",
+        path: "industrysmanagement",
         element: (
           <ProtectedAuth>
             <Suspense>
-              <CategoriesManager />
+              <IndustryManager />
             </Suspense>
           </ProtectedAuth>
         ),
+        children: [
+          {
+            path: "categories",
+            element: (
+              <ProtectedAuth>
+                <Suspense>
+                  <Category />
+                </Suspense>
+              </ProtectedAuth>
+            ),
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: "attributes",
+            element: (
+              <ProtectedAuth>
+                <Suspense>
+                  <AttributeManager />
+                </Suspense>
+              </ProtectedAuth>
+            ),
+            errorElement: <ErrorPage />,
+          },
+        ],
+        errorElement: <ErrorPage />,
       },
       {
         path: "produtsmanagement",
@@ -85,6 +116,7 @@ const router = createBrowserRouter([
             </Suspense>
           </ProtectedAuth>
         ),
+        errorElement: <ErrorPage />,
       },
     ],
   },

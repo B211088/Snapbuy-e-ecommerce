@@ -3,7 +3,8 @@ import ModalContainer from "./ModalContainer";
 import InputField from "./InputField";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { useNotify } from "../Notify/NotifyModal";
-import { useCategories } from "../../contexts/CategoriesContext";
+
+import { useAdminManager } from "../../contexts/AdminContext";
 
 const UpdateCategory = ({
   categoryData,
@@ -11,7 +12,7 @@ const UpdateCategory = ({
   onSuccess,
 }) => {
   const { isDarkMode } = useTheme();
-  const { updateCategory } = useCategories();
+  const { updateCategory } = useAdminManager();
   const { notifySuccess, notifyWarning } = useNotify();
   const [formData, setFormData] = useState({
     name: categoryData.name,

@@ -3,7 +3,8 @@ import InputField from "./InputField";
 import ModalContainer from "./ModalContainer";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { useNotify } from "../Notify/NotifyModal";
-import { useCategories } from "../../contexts/CategoriesContext";
+
+import { useAdminManager } from "../../contexts/AdminContext";
 
 const UpdateSubCategory = ({
   categoryId,
@@ -13,7 +14,7 @@ const UpdateSubCategory = ({
 }) => {
   const { isDarkMode } = useTheme();
   const { notifySuccess, notifyWarning } = useNotify();
-  const { updateSubCategory } = useCategories();
+  const { updateSubCategory } = useAdminManager();
   const [formData, setFormData] = useState({
     categoryId: categoryId,
     name: subCategoryData.name,
@@ -23,6 +24,8 @@ const UpdateSubCategory = ({
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  console.log("subCategoryData", subCategoryData);
 
   const handleUpdateSubCategory = async () => {
     const { name, description } = formData;

@@ -3,7 +3,8 @@ import ModalContainer from "./ModalContainer";
 import InputField from "./InputField";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { useNotify } from "../Notify/NotifyModal";
-import { useCategories } from "../../contexts/CategoriesContext";
+
+import { useAdminManager } from "../../contexts/AdminContext";
 
 const AddSubCategory = ({
   categoryId,
@@ -12,7 +13,7 @@ const AddSubCategory = ({
 }) => {
   const { isDarkMode } = useTheme();
   const { notifySuccess, notifyWarning, notifyError } = useNotify();
-  const { addSubCategory } = useCategories();
+  const { addSubCategory } = useAdminManager();
   const [formData, setFormData] = useState({
     categoryId: categoryId,
     name: "",
@@ -51,11 +52,13 @@ const AddSubCategory = ({
 
   return (
     <ModalContainer onCloseModal={onCloseModalAddSubCategory}>
-      <div className="w-full flex flex-col px-[20px] ">
-        <h1>Thêm loại sản phẩm</h1>
-        <p>Nhập thông tin và bấm xác nhận</p>
+      <div className="w-full flex flex-col px-[20px] pt-[10px] font-nunito ">
+        <h1 className="text-[1.2rem] font-bold pb-[5px]">
+          Thêm Loại sản phẩm{" "}
+        </h1>
+        <p className="text-[0.9rem]">Nhập thông tin và bấm xác nhận</p>
       </div>
-      <div className="w-full flex flex-col gap-[20px] pt-[20px] pb-[20px] px-[20px]">
+      <div className="w-full flex flex-col gap-[20px] pt-[20px] pb-[15px] px-[20px]">
         <InputField
           payload={{
             type: "text",

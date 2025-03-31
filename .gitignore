@@ -9,6 +9,11 @@ lerna-debug.log*
 
 node_modules
 dist
+.env
+.env.local
+.env.development
+.env.production
+.env.testgit checkout admin-frontend
 dist-ssr
 *.local
 
