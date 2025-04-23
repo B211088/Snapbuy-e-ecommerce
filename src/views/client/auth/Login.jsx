@@ -7,7 +7,7 @@ import { useTheme } from "../../../Provider/ThemeProvider";
 import { useAuth } from "../../../contexts/User/AuthContext";
 
 import { ToastContainer } from "react-toastify";
-import HeaderFlexibleView from "../../../components/Header/HeaderFlexibleView";
+import HeaderFlexibleView from "../../../components/header/HeaderFlexibleView";
 import { useNotify } from "../../../components/Notify/NotifyModal";
 
 const Login = () => {

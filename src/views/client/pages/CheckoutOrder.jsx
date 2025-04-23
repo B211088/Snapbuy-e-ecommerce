@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import LayoutModeBackground from "../layout/LayoutModeBackground";
-import HeaderTop from "../../../components/Header/HeaderTop";
-import Header from "../../../components/Header/Header";
+import HeaderTop from "../../../components/header/HeaderTop";
+import Header from "../../../components/header/Header";
 import { useTheme } from "../../../Provider/ThemeProvider";
-import { useAddress } from "../../../contexts/User/AddressContext";
 import sanpham1 from "../../../assets/images/sanpham1.webp";
 import { useLocation, useNavigate } from "react-router-dom";
 import GetAddressReceiver from "../../../components/Modal/GetAddressReceiver";

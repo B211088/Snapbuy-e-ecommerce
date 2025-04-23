@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
-import HeaderTop from "../../../../components/Header/HeaderTop";
-import Header from "../../../../components/Header/Header";
+import HeaderTop from "../../../../components/header/HeaderTop";
+import Header from "../../../../components/header/Header";
 import { useTheme } from "../../../../Provider/ThemeProvider";
 import SuggestionsSlide from "../../../../components/Header/SuggestionsSlide";
 import PathAccess from "../../../../components/features/PathAccess";

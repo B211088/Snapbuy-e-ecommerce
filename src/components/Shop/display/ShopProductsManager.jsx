@@ -1,7 +1,6 @@
-import React from "react";
 import OutLetContainer from "../../../views/client/layout/OutLetContainer";
 import { useTheme } from "../../../Provider/ThemeProvider";
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
 const ShopProductsManager = () => {
   const { isDarkMode } = useTheme();

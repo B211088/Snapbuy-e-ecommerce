@@ -1,5 +1,5 @@
 import LayoutModeBackground from "../../layout/LayoutModeBackground";
-import HeaderFlexibleView from "../../../../components/Header/HeaderFlexibleView";
+import HeaderFlexibleView from "../../../../components/header/HeaderFlexibleView";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "../../../../contexts/User/AuthContext";
