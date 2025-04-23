@@ -1,5 +1,5 @@
 import { useAuth } from "../../contexts/User/AuthContext";
-import QuantityProduct from "../Header/QuantityProduct";
+import QuantityProduct from "../header/QuantityProduct";
 import { useConfirm } from "../Notify/ConfirmModal";
 import { useNotify } from "../Notify/NotifyModal";
 import { Link } from "react-router-dom";

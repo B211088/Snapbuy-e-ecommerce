@@ -58,7 +58,7 @@ const CheckoutOrder = () => {
     fetchAddressReciver();
   }, [productListOrdersState]);
 
-  console.log(addresses);
+  console.log({ productListOrdersState });
 
   useEffect(() => {
     if (!productListOrdersState || productListOrdersState.length === 0) return;
@@ -455,7 +455,7 @@ const CheckoutOrder = () => {
                           <div className="w-[60px] aspect-square rounded-[5px] overflow-hidden">
                             <img
                               className="w-full min-w-full h-full object-cover"
-                              src={item.thumbnail || sanpham1}
+                              src={item?.product_option.image_url}
                               alt={item.name}
                             />
                           </div>
