@@ -1,8 +1,7 @@
-import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useTheme } from "../../Provider/ThemeProvider";
-
+import { Link } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 const NavItem = ({ payload, currentPath }) => {
   const { label, menuId, items, icon, path } = payload;
   const { isDarkMode } = useTheme();
@@ -54,7 +53,7 @@ const NavItem = ({ payload, currentPath }) => {
           <div
             className={`text-[0.8rem] w-[30px] h-[30px] flex items-center justify-center cursor-pointer   ${
               isActiveMain
-                ? "text-red-500 font-bold"
+                ? "text-blue-600 font-bold"
                 : isDarkMode
                 ? "hover:bg-dark-900"
                 : "hover:bg-light-800"

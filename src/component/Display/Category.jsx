@@ -162,21 +162,24 @@ const Category = () => {
   };
 
   const handleRemoveSubCategory = async (subCategoryId, categoryId) => {
-    const isConfirmed = window.confirm(
-      "Bạn có chắc chắn muốn xóa danh mục này không?"
-    );
-    if (!isConfirmed) return;
-
-    try {
-      const response = await removeSubCategory(subCategoryId, categoryId);
-      if (response.success) {
-        notifySuccess(response.message, 3000);
-      } else {
-        notifyWarning("Xóa danh mục con thất bại", 3000);
-      }
-    } catch (error) {
-      notifyWarning("Đã xảy ra lỗi khi xóa danh mục con", 3000);
-    }
+    confirm({
+      message: "Bạn có chắc muốn xóa phân loại này?",
+      onConfirm: async () => {
+        try {
+          const response = await removeSubCategory(subCategoryId, categoryId);
+          if (response.success) {
+            notifySuccess(response.message, 3000);
+          } else {
+            notifyWarning("Xóa danh mục con thất bại", 3000);
+          }
+        } catch (error) {
+          notifyWarning("Đã xảy ra lỗi khi xóa danh mục con", 3000);
+        }
+      },
+      onCancel: () => {
+        return;
+      },
+    });
   };
   return (
     <div className="w-full flex flex-col">

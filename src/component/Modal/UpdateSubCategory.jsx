@@ -61,7 +61,7 @@ const UpdateSubCategory = ({
   return (
     <ModalContainer onCloseModal={onCloseModalUpdateSubCategory}>
       <div className="w-full flex flex-col px-[20px] ">
-        <h1>Cập nhật loại sản phẩm</h1>
+        <h1 className="font-bold text-[1.2rem]">Cập nhật loại sản phẩm</h1>
         <p>Nhập thông tin và bấm xác nhận</p>
       </div>
       <div className="w-full flex flex-col gap-[20px] pt-[20px] pb-[20px] px-[20px]">

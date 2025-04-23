@@ -15,6 +15,8 @@ import ProductsManager from "../component/Display/ProductsManager";
 import IndustryManager from "../component/Display/IndustryManager";
 import Category from "../component/Display/Category";
 import AttributeManager from "../component/Display/AttributeManager";
+import FinnanceManager from "../component/Display/FinnanceManager";
+import ShippingManager from "../component/Display/ShippingManager";
 
 const router = createBrowserRouter([
   {
@@ -113,6 +115,28 @@ const router = createBrowserRouter([
           <ProtectedAuth>
             <Suspense>
               <ProductsManager />
+            </Suspense>
+          </ProtectedAuth>
+        ),
+        errorElement: <ErrorPage />,
+      },
+      {
+        path: "/financemanagement/sellers",
+        element: (
+          <ProtectedAuth>
+            <Suspense>
+              <FinnanceManager />
+            </Suspense>
+          </ProtectedAuth>
+        ),
+        errorElement: <ErrorPage />,
+      },
+      {
+        path: "/shippingmanagement",
+        element: (
+          <ProtectedAuth>
+            <Suspense>
+              <ShippingManager />
             </Suspense>
           </ProtectedAuth>
         ),

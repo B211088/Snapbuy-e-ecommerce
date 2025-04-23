@@ -1,6 +1,4 @@
-const apiServer = import.meta.env.VITE_BACKEND_API_URL;
-
-export const apiUrl = apiServer;
+export const apiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 export const LOCAL_STORAGE_TOKEN_NAME = "accessToken";
 export const LOCAL_STORAGE_USER = "userId";
@@ -40,3 +38,4 @@ export const ADD_ONE_SUBCATEGORY_ATTRIBUTE = "ADD_ONE_SUBCATEGORY_ATTRIBUTE";
 export const ADD_MULTIPLE_SUBCATEGORY_ATTRIBUTES =
   "ADD_MULTIPLE_SUBCATEGORY_ATTRIBUTES";
 export const UPDATE_SUBCATEGORY_ATTRIBUTES = "UPDATE_SUBCATEGORY_ATTRIBUTES";
+export const REMOVE_SUBCATEGORY_ATTRIBUTE = "REMOVE_SUBCATEGORY_ATTRIBUTE";

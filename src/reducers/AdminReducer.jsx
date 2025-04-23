@@ -8,6 +8,7 @@ import {
   REMOVE_ATTRIBUTE,
   REMOVE_CATEGORY,
   REMOVE_SUB_CATEGORY,
+  REMOVE_SUBCATEGORY_ATTRIBUTE,
   SET_ALL_ATTRIBUTES,
   SET_ALL_CATEGORIES,
   SET_ALL_SUB_CATEGORIES,
@@ -241,6 +242,19 @@ export const subcategoryAttributeReducer = (state, action) => {
               attr.attribute_id === attribute_id
                 ? { ...attr, attribute_value: newValue }
                 : attr
+          ),
+        },
+      };
+    }
+
+    case REMOVE_SUBCATEGORY_ATTRIBUTE: {
+      const { subcategory_id, attribute_id } = action.payload;
+      return {
+        ...state,
+        categoryAttributes: {
+          ...state.categoryAttributes,
+          [subcategory_id]: state.categoryAttributes[subcategory_id]?.filter(
+            (attr) => attr.attribute_id !== attribute_id
           ),
         },
       };

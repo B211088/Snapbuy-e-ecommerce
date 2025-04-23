@@ -2,7 +2,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import Header from "../../component/Header/Header";
 import NavDashboard from "../../component/Nav/NavDashBoard";
-import LayoutModeBackground from "../../component/Layout/LayoutModeBackGround";
+import LayoutModeBackground from "../../component/Layout/LayoutModeBackground";
 
 const AdminDashBoard = () => {
   return (
@@ -31,10 +31,7 @@ const navList = [
     id: 2,
     label: "Quản lý người dùng",
     menuId: "user",
-    items: [
-      { id: 1, label: "Người dùng", href: "/usersmanagement" },
-      { id: 2, label: "Người bán", href: "/sellersmanagement" },
-    ],
+    items: [{ id: 1, label: "Người dùng", href: "/usersmanagement" }],
     icon: "fa-solid fa-user",
   },
   {
@@ -46,5 +43,26 @@ const navList = [
       { id: 2, label: "Sản phẩm", href: "/produtsmanagement" },
     ],
     icon: "fa-solid fa-clipboard-list",
+  },
+  {
+    id: 4,
+    label: "Quản lý tài chính",
+    menuId: "finance",
+    items: [
+      {
+        id: 1,
+        label: "Thống kê tài chính",
+        href: "/financemanagement/sellers",
+      },
+    ],
+    icon: "fa-solid fa-coins",
+  },
+  {
+    id: 5,
+    label: "Quản lý tài chính",
+    menuId: "finance",
+    path: "/shippingmanagement",
+    items: [],
+    icon: "fa-solid fa-coins",
   },
 ];

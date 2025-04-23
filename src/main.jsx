@@ -5,7 +5,6 @@ import { ThemeProvider } from "./Provider/ThemeProvider.jsx";
 import { RouterProvider } from "react-router-dom";
 import router from "./routers/index.jsx";
 import { AuthContextProvider } from "./contexts/AuthContext.jsx";
-
 import { NotifyProvider } from "./component/Notify/NotifyModal.jsx";
 import { AdminContextProvider } from "./contexts/AdminContext.jsx";
 

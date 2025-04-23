@@ -11,6 +11,7 @@ import {
   REMOVE_ATTRIBUTE,
   REMOVE_CATEGORY,
   REMOVE_SUB_CATEGORY,
+  REMOVE_SUBCATEGORY_ATTRIBUTE,
   SET_ALL_ATTRIBUTES,
   SET_ALL_CATEGORIES,
   SET_ALL_SUB_CATEGORIES,
@@ -456,6 +457,34 @@ export const AdminContextProvider = ({ children }) => {
     }
   };
 
+  const removeSubcategoryAttribute = async (subcategoryId, attributeId) => {
+    try {
+      const response = await axios.delete(
+        `${apiUrl}/api/v1/subcategory_attribute/${attributeId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        subCategoryAttributeDispatch({
+          type: REMOVE_SUBCATEGORY_ATTRIBUTE,
+          payload: {
+            subcategory_id: subcategoryId,
+            attribute_id: attributeId,
+          },
+        });
+
+        return { success: true, message: "Xóa thuộc tính thành công!" };
+      }
+
+      return { success: false, message: "Không thể xóa thuộc tính!" };
+    } catch (error) {
+      console.error(error);
+      return { success: false, message: "Đã xảy ra lỗi khi xóa thuộc tính!" };
+    }
+  };
+
   const adminContextData = {
     categoriesState,
     getAllCategories,
@@ -477,6 +506,7 @@ export const AdminContextProvider = ({ children }) => {
     addOneSubcategoryAttribute,
     addMultipleSubcategoryAttributes,
     updateSubcategoryAttributes,
+    removeSubcategoryAttribute,
   };
 
   return (
