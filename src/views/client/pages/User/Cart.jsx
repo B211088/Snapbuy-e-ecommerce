@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import HeaderTop from "../../../../components/header/HeaderTop";
 import Header from "../../../../components/header/Header";
 import { useTheme } from "../../../../Provider/ThemeProvider";
-import SuggestionsSlide from "../../../../components/Header/SuggestionsSlide";
+import SuggestionsSlide from "../../../../components/header/SuggestionsSlide";
 import PathAccess from "../../../../components/features/PathAccess";
 import LayoutModeBackground from "../../layout/LayoutModeBackground";
 import { useAuth } from "../../../../contexts/User/AuthContext";

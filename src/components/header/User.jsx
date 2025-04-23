@@ -1,7 +1,5 @@
-import { useContext, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import avt from "../../assets/images/sanpham3.jpg";
-
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { useAuth } from "../../contexts/User/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +8,7 @@ import ExtentionsUser from "../User/ExtentionsUser";
 const User = () => {
   const { isDarkMode } = useTheme();
   const {
-    authState: { isAuthenticated, user, roles },
+    authState: { isAuthenticated, user },
   } = useAuth();
 
   const extentionsList = [

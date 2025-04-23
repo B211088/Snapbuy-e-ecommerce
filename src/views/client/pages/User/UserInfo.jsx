@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import HeaderTop from "../../../../components/header/HeaderTop";
 import Header from "../../../../components/header/Header";
-import SuggestionsSlide from "../../../../components/Header/SuggestionsSlide";
+import SuggestionsSlide from "../../../../components/header/SuggestionsSlide";
 import ScrollButton from "../../../../components/features/ScrollButton";
 import LayoutModeBackground from "../../layout/LayoutModeBackground";
 import NavDashboard from "../../../../components/Nav/NavDashboard";
