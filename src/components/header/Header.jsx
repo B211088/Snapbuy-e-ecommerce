@@ -1,14 +1,13 @@
 import { useState } from "react";
 import logo from "../../assets/images/logo_snapbuy.png";
 import Search from "../Searchs/Search";
-
 import CartButton from "./CartButton";
 import SearchModal from "../Searchs/SearchModal";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { Link } from "react-router-dom";
 
 const Header = () => {
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode } = useTheme();
   const [searchModal, setSearchModal] = useState(false);
 
   const handleChangeStatusSearchModal = () => {
