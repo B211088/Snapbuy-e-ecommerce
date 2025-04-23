@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import LayoutModeBackground from "../layout/LayoutModeBackground";
 import HeaderTop from "../../../components/header/HeaderTop";
 import Header from "../../../components/header/Header";
-import SuggestionsSlide from "../../../components/Header/SuggestionsSlide";
+import SuggestionsSlide from "../../../components/header/SuggestionsSlide";
 import SectionContainer from "../layout/SectionContainer";
 import { useTheme } from "../../../Provider/ThemeProvider";
 import { useAppData } from "../../../contexts/client/AppDataContext";
