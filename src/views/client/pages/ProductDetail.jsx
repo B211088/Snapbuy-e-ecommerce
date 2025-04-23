@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTheme } from "../../../Provider/ThemeProvider";
+import { useAppData } from "../../../contexts/client/AppDataContext";
+import { useAuth } from "../../../contexts/User/AuthContext";
+import { useNotify } from "../../../components/Notify/NotifyModal";
 import LayoutModeBackground from "../layout/LayoutModeBackground";
 import HeaderTop from "../../../components/header/HeaderTop";
 import Header from "../../../components/header/Header";
 import SuggestionsSlide from "../../../components/header/SuggestionsSlide";
 import SectionContainer from "../layout/SectionContainer";
-import { useTheme } from "../../../Provider/ThemeProvider";
-import { useAppData } from "../../../contexts/client/AppDataContext";
 import Loading from "./Loading";
 import ModalContainer from "../../../components/Modal/ModalContainer";
-import { useAuth } from "../../../contexts/User/AuthContext";
-import { useNotify } from "../../../components/Notify/NotifyModal";
-import FeedBackProduct from "../../../components/Products/feedBackProduct";
+import FeedBackProduct from "../../../components/Products/FeedBackProduct";
 import ProductsSlide from "../../../components/display/ProductsSlide";
 import Footer from "../../../components/display/Footer";
 function ProductDetail() {

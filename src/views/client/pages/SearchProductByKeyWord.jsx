@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import LayoutModeBackground from "../layout/LayoutModeBackground";
 import HeaderTop from "../../../components/header/HeaderTop";
 import Header from "../../../components/header/Header";
-import SuggestionsSlide from "../../../components/Header/SuggestionsSlide";
+import SuggestionsSlide from "../../../components/header/SuggestionsSlide";
 import { useSearchParams } from "react-router-dom";
 import { useTheme } from "../../../Provider/ThemeProvider";
 import { useAppData } from "../../../contexts/client/AppDataContext";
