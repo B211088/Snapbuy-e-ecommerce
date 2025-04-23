@@ -19,7 +19,6 @@ const CardList = () => {
     productsState: { products },
     getProductsByRating,
   } = useAppData();
-  console.log({ productList });
 
   useEffect(() => {
     const fetchProducts = async () => {

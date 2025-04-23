@@ -62,8 +62,6 @@ function ProductDetail() {
     },
   ]);
 
-  console.log({ product });
-
   const handleAddProductToCart = async () => {
     try {
       const formData = {

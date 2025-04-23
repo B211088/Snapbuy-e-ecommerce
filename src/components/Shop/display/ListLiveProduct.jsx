@@ -28,8 +28,6 @@ const ListLiveProduct = () => {
     fetchProducts();
   }, []);
 
-  console.log({ products });
-
   // Fetch product details when a product is selected
   useEffect(() => {
     if (selectedProduct) {

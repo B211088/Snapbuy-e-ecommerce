@@ -25,8 +25,6 @@ const ListOrderPackeging = () => {
     {}
   );
 
-  console.log({ shippingProviders });
-
   const statusOptions = [{ value: "PACKAGING", label: "Đang đóng gói" }];
 
   useEffect(() => {

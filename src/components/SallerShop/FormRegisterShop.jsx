@@ -139,8 +139,6 @@ const FormRegisterShop = () => {
       // Lấy kết quả cao nhất
       const topPrediction = sortedPredictions[0];
 
-      console.log("Kết quả nhận dạng:", sortedPredictions);
-
       // Chỉ chấp nhận nếu độ tin cậy trên 70%
       if (topPrediction.probability > 0.7) {
         return {

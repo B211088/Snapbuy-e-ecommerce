@@ -33,7 +33,6 @@ const ShopOrderManager = () => {
   const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" });
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [showFilters, setShowFilters] = useState(false);
-  console.log({ orders });
 
   const statusOptions = [
     { value: "PENDING", label: "Chờ xác nhận" },

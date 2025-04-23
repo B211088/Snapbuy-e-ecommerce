@@ -16,8 +16,6 @@ const OrderPrint = ({ orderData, onCloseModal }) => {
     user_village_response,
   } = orderData;
 
-  console.log({ orderData });
-
   // Handle printing using browser's print functionality
   const handlePrint = () => {
     const printContent = printRef.current;

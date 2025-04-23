@@ -34,8 +34,6 @@ const Cart = () => {
   const [totalCartItems, setTotalCartItems] = useState(0);
   const [productListDelete, setProductListDelete] = useState([]);
 
-  console.log({ cartProducts });
-
   // Transform and flatten the cart data structure for easier handling
   useEffect(() => {
     if (!carts || carts.length === 0) {

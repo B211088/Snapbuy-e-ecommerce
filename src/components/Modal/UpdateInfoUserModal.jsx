@@ -18,7 +18,6 @@ const UpdateInfoUserModal = ({ onCloseUpdateInfoUserModal }) => {
     authState: { user },
     updateUserInfo,
   } = useAuth();
-  console.log({ user });
 
   const [formData, setFormData] = useState({
     account: user.account,

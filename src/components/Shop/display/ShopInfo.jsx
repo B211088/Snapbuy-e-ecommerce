@@ -8,7 +8,7 @@ const ShopInfo = () => {
     shopState: { shopInfo },
   } = useShop();
   const { isDarkMode } = useTheme();
-  console.log({ shopInfo });
+
   const [showModalUpdateInfoShop, setShowModalUpdateInfoShop] = useState(false);
 
   if (!shopInfo) {

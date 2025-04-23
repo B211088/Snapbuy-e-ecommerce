@@ -11,7 +11,7 @@ const GetCategory = ({ onCloseModal, onSelect }) => {
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [subCategories, setSubCategories] = useState([]);
-  console.log(subCategories);
+
   const handleCategoryClick = async (category) => {
     setSelectedCategory(category);
     const subs = await getSubCategories(category.id);

@@ -25,7 +25,6 @@ const UpdateInfoShopModal = ({ onCloseUpdateInfoUserModal }) => {
     updateShopInfo,
   } = useShop();
 
-  console.log({ shopInfo });
   const [localAddress, setLocalAddress] = useState({
     province: shopInfo.address_response?.province_id,
     district: shopInfo.address_response?.district_id,
