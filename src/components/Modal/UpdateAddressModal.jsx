@@ -19,19 +19,19 @@ const UpdateAddressModal = ({
   const { updateAddressReceiver } = useAddress();
   const { notifySuccess, notifyError, notifyWarning } = useNotify();
   const [localAddress, setLocalAddress] = useState({
-    province: address.province_id,
-    district: address.district_id,
-    village: address.village_id,
+    province: address?.province_id,
+    district: address?.district_id,
+    village: address?.village_id,
   });
 
   console.log("updateaddress", address);
 
   const [formData, setFormData] = useState({
-    user_id: user.id,
+    user_id: user?.id,
     village_id: localAddress.village,
-    specific_address: address.specific_address,
-    receiver_name: address.receiver_name,
-    phone_number: address.phone_number,
+    specific_address: address?.specific_address,
+    receiver_name: address?.receiver_name,
+    phone_number: address?.phone_number,
   });
 
   console.log("update address data", formData);

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import logo from "../../assets/images/logo_snapbuy.png";
 import Search from "../Searchs/Search";
-import Nav from "./Nav";
+
 import CartButton from "./CartButton";
 import SearchModal from "../Searchs/SearchModal";
 import { useTheme } from "../../Provider/ThemeProvider";
@@ -36,7 +36,6 @@ const Header = () => {
           </div>
         </Link>
 
-        <Nav />
         <div className="pc:w-6/12 tl:w-7/12 mb:w-full  flex items-center justify-end  pc:gap-[20px] tl:gap-[10px] mb:gap-[10px]">
           <Search
             handleChangeStatusSearchModal={handleChangeStatusSearchModal}

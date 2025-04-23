@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { useAuth } from "../../contexts/User/AuthContext";
 import UpdateInfoUserModal from "../Modal/UpdateInfoUserModal";
-import UpdateImgModal from "../Modal/UpdateImgModal";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import { useNotify } from "../Notify/NotifyModal";
+import UpdateAvatarModal from "../Modal/UpdateAvatarModal";
 
 const Profile = () => {
   const { isDarkMode } = useTheme();
@@ -14,13 +13,11 @@ const Profile = () => {
   const location = useLocation();
 
   const {
-    authState: { user, roles },
-    uploadAvatar,
+    authState: { user },
   } = useAuth();
 
   const [showUpdateInfoUserModal, setUpdateInfoUserModal] = useState(false);
   const [showUpdateImgModal, setUpdateImgModal] = useState(false);
-  const [imgaeUpdate, setImageUpdate] = useState(null);
 
   const handleOpenUpdateInfoUserModal = () => {
     setUpdateInfoUserModal(true);
@@ -47,26 +44,6 @@ const Profile = () => {
     }
   }, [location.search]);
 
-  const handleUpload = async () => {
-    if (!user || !user.id) {
-      notifyWarning("Không tìm thấy thông tin người dùng!");
-      return;
-    }
-
-    try {
-      const result = await uploadAvatar(user.id, imgaeUpdate);
-      if (result.success) {
-        notifySuccess("Cập nhật ảnh đại điện thành công");
-        setImageUpdate(false);
-      } else {
-        notifyWarning(`Lỗi:  ${result.message}`);
-      }
-    } catch (error) {
-      console.error("Lỗi khi upload ảnh:", error);
-      notifyWarning("Lỗi khi tải lên ảnh!");
-    }
-  };
-
   return (
     <div className="w-full flex gap-[20px]  ">
       <div
@@ -74,8 +51,8 @@ const Profile = () => {
           isDarkMode ? "bg-white text-dark-100" : "bg-dark-200 text-white "
         }`}
       >
-        <div className="w-full flex items-center justify-between px-[20px] py-[12px] border-b-[1px] border-dashed ">
-          <div className="flex items-center  font-nunito gap-[10px]">
+        <div className="w-full flex mb:flex-col items-center justify-between pc:p-[20px] mb:p-[10px]  border-b-[1px] border-dashed ">
+          <div className="w-full flex items-center  font-nunito gap-[10px]">
             <div
               className={`w-[50px] h-[50px] min-w-[50px] flex items-center justify-center rounded-full border-[1px] text-[1.4rem] ${
                 isDarkMode ? "text-dark-300" : "text-light-300"
@@ -94,7 +71,9 @@ const Profile = () => {
               </p>
             </div>{" "}
           </div>
-          <div className={`w-full flex  justify-end font-normal text-[1rem] `}>
+          <div
+            className={`w-full flex  pc:justify-end font-normal text-[1rem] mb:py-[10px]`}
+          >
             <div
               className=" flex items-center justify-center  gap-[7px] truncate rounded-[5px]  text-dark-1000  border-[1px] border-dark-700  p-[3px] cursor-pointer"
               onClick={handleOpenUpdateInfoUserModal}
@@ -107,12 +86,12 @@ const Profile = () => {
             </div>
           </div>
         </div>
-        <div className="w-full  flex   px-[40px] py-[40px] gap-[40px]">
-          <div className="w-4/12 flex flex-col  border-dashed">
-            <div className="w-full   flex flex-col items-center ">
-              <div className="w-[180px] h-[180px] rounded-full border-[1px]">
+        <div className="w-full flex  mb:flex-col   pc:p-[40px] mb:p-[10px] gap-[40px]">
+          <div className="pc:w-4/12 mb:w-full flex flex-col   border-dashed">
+            <div className="w-full flex flex-col mb:flex-row items-center mb:gap-[10px] ">
+              <div className="w-[180px] h-[180px] mb:w-[100px] mb:h-[100px] aspect-square  rounded-full border-[1px]">
                 <img
-                  className="w-full h-full  rounded-full object-cover cursor-pointer"
+                  className="w-full h-full aspect-square  rounded-full object-cover cursor-pointer"
                   src={
                     user.avatar !== "user.png"
                       ? user.avatar_url
@@ -121,34 +100,36 @@ const Profile = () => {
                   alt="avatar"
                 />
               </div>
-              <div
-                className={`font-nunito font-bold pt-[10px] text-[1.3rem] ${
-                  user.fullname ? "text-dark-100 " : " text-dark-400"
-                } ${isDarkMode ? "text-dark-100" : "text-dark-1000"}`}
-              >
-                {user.fullname ? user.fullname : "Chưa cập nhật"}
-              </div>
-              <div className="w-full flex justify-center mt-[10px]">
+              <div className="w-full flex flex-col mb:mb-[10px]">
                 <div
-                  className={` px-[10px] py-[5px] border-dashed rounded-[5px] text-[0.7rem] font-nunito   cursor-pointer ${
-                    isDarkMode
-                      ? "text-dark-100 border-[1px] border-[#3e3e3e] "
-                      : "text-dark-1000 border-[1px] border-[#ffffff] "
-                  }`}
-                  onClick={onOpenUpdateImgModal}
+                  className={`pc:text-center font-nunito font-bold pt-[10px] text-[1.3rem] mb:text-[1.2rem] truncate ${
+                    user.fullname ? "text-dark-100 " : " text-dark-400"
+                  } ${isDarkMode ? "text-dark-100" : "text-dark-1000"}`}
                 >
-                  <span>Thay đổi ảnh đại diện</span>
+                  {user.fullname ? user.fullname : "Chưa cập nhật"}
+                </div>
+                <div className="w-full flex justify-center mb:justify-start mt-[10px] pl-[5px]">
+                  <div
+                    className={` px-[10px] py-[5px] border-dashed rounded-[5px] text-[0.7rem] font-nunito   cursor-pointer ${
+                      isDarkMode
+                        ? "text-dark-100 border-[1px] border-[#3e3e3e] "
+                        : "text-dark-1000 border-[1px] border-[#ffffff] "
+                    }`}
+                    onClick={onOpenUpdateImgModal}
+                  >
+                    <span>Thay đổi ảnh đại diện</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div className="w-8/12 flex flex-col gap-[20px]">
+          <div className="pc:w-8/12 w-full flex flex-col pc:gap-[20px] mb:gap-[10px] mb:text-[0.9rem]">
             <div className="w-full flex items-center gap-[40px] font-nunito py-[5px]">
-              <div className="w-3/12 font-bold text-[1rem] flex justify-end">
+              <div className="w-3/12 mb:w-4/12 font-bold  flex pc:justify-end truncate">
                 <span>Tên đăng nhập</span>
               </div>
               <div
-                className={`w-8/12 font-normal text-[1rem] ${
+                className={`w-9/12 mb:w-8/12  font-normal ${
                   user?.account ? "text-dark-100 " : " text-dark-400"
                 } ${isDarkMode ? "text-dark-100" : "text-dark-1000"}`}
               >
@@ -156,11 +137,11 @@ const Profile = () => {
               </div>
             </div>
             <div className="w-full flex items-center gap-[40px] font-nunito py-[5px]">
-              <div className="w-3/12 font-bold text-[1rem] flex justify-end">
+              <div className="w-3/12 mb:w-4/12  font-bold flex pc:justify-end">
                 <span>Họ và tên</span>
               </div>
               <div
-                className={`w-8/12 font-normal text-[1rem] ${
+                className={`w-9/12 mb:w-8/12  font-normal  ${
                   user?.account ? "text-dark-100 " : " text-dark-400"
                 } ${isDarkMode ? "text-dark-100" : "text-dark-1000"}`}
               >
@@ -169,16 +150,15 @@ const Profile = () => {
             </div>
 
             <div className="w-full flex items-center gap-[40px] font-nunito py-[5px] ">
-              <div className="w-3/12 font-bold text-[1rem] flex  justify-end">
+              <div className="w-3/12 mb:w-4/12  font-bold flex  pc:justify-end">
                 <span>Email </span>
               </div>
               <div
-                className={`w-8/12 font-normal flex items-center gap-[20px] text-[1rem] ${
+                className={`w-9/12 mb:w-8/12  font-normal flex mb:flex-col pc:items-center pc:justify-between pc:gap-[20px]  ${
                   user.email ? "text-dark-100 " : " text-dark-400"
                 } ${isDarkMode ? "text-dark-100" : "text-dark-1000"}`}
               >
                 <div className="w-8/12">
-                  {" "}
                   {user?.email ? user.email : "Chưa cập nhật"}
                 </div>
                 <div className="flex font-nunito text-[0.8rem] cursor-pointer text-blue-500">
@@ -188,16 +168,16 @@ const Profile = () => {
                 </div>
               </div>
             </div>
-            <div className="w-full flex items-center gap-[40px] font-nunito py-[5px] ">
-              <div className="w-3/12 font-bold text-[1rem] flex  justify-end">
+            <div className="w-full flex items-center  gap-[40px] font-nunito py-[5px] ">
+              <div className="w-3/12 mb:w-4/12  font-bold  flex  pc:justify-end">
                 <span>Số điện thoại </span>
               </div>
               <div
-                className={`w-8/12 font-normal flex items-center gap-[20px] text-[1rem] ${
+                className={`w-9/12 mb:w-8/12  font-normal flex mb:flex-col pc:items-center pc:justify-between pc:gap-[20px]  ${
                   user.phone_number ? "text-dark-100 " : " text-dark-400"
                 } ${isDarkMode ? "text-dark-100" : "text-dark-1000"}`}
               >
-                <div className="w-8/12">
+                <div className="w-9/12">
                   {" "}
                   {user?.phone_number ? user.phone_number : "Chưa cập nhật"}
                 </div>
@@ -210,11 +190,11 @@ const Profile = () => {
               </div>
             </div>
             <div className="w-full flex items-center gap-[40px] font-nunito py-[5px] ">
-              <div className="w-3/12 font-bold text-[1rem] flex justify-end">
+              <div className="w-3/12 mb:w-4/12 font-bold  flex pc:justify-end ">
                 <span>Giới tính </span>
               </div>
               <div
-                className={`w-8/12 font-normal text-[1rem] ${
+                className={`w-9/12 mb:w-8/12  font-normal  ${
                   user?.gender !== null ? "text-dark-100 " : " text-dark-400"
                 } ${isDarkMode ? "text-dark-100" : "text-dark-1000"}`}
               >
@@ -226,11 +206,11 @@ const Profile = () => {
               </div>
             </div>
             <div className="w-full flex items-center gap-[40px] font-nunito py-[5px]">
-              <div className="w-3/12 font-bold text-[1rem] flex justify-end">
+              <div className="w-3/12 mb:w-4/12 font-bold  flex pc:justify-end ">
                 <span>Ngày sinh </span>
               </div>
               <div
-                className={`w-8/12 font-normal text-[1rem] ${
+                className={`w-9/12 mb:w-8/12  font-normal mb:text-[0.85rem]  ${
                   user.birth_date ? "text-dark-100 " : " text-dark-400"
                 } ${isDarkMode ? "text-dark-100" : "text-dark-1000"}`}
               >
@@ -248,13 +228,7 @@ const Profile = () => {
         )}
 
         {showUpdateImgModal && (
-          <UpdateImgModal
-            onCropped={(croppedImage) => {
-              setImageUpdate(croppedImage);
-            }}
-            onUpload={handleUpload}
-            onCloseUpdateImgModal={closeUpdateImgModal}
-          />
+          <UpdateAvatarModal onCloseUpdateImgModal={closeUpdateImgModal} />
         )}
       </div>
     </div>

@@ -8,6 +8,7 @@ import banner4 from "../../assets/images/banner4.png";
 import banner5 from "../../assets/images/banner5.png";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { useAuth } from "../../contexts/User/AuthContext";
+import { useAppData } from "../../contexts/client/AppDataContext";
 
 const Banner = () => {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -22,6 +23,10 @@ const Banner = () => {
   const {
     authState: { user },
   } = useAuth();
+
+  const {
+    categoriesState: { categories },
+  } = useAppData();
 
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -50,10 +55,16 @@ const Banner = () => {
   }, []);
 
   return (
-    <div className="w-full flex items-center justify-center pc:my-[20px] tl:my-[20px] mb:mt-[30px] mb:mb-[10px]">
-      <div className="pc:w-[90%] mb:w-full h-full flex tl:flex-col mb:flex-col gap-[10px]">
-        <div className="pc:w-6/12 mb:w-full  pc:pr-[10px]  tl:px-[10px] mb:px-[10px] relative group overflow-hidden rounded-[5px]">
-          <div className="w-full h-full flex rounded-[5px]">
+    <div
+      className={`w-full flex  justify-center pc:py-[20px] tl:py-[20px] mb:pt-[30px] mb:pb-[10px]  ${
+        isDarkMode ? "bg-background" : "bg-[#515151]"
+      }`}
+    >
+      <div
+        className={`pc:w-[90%] mb:w-full h-full flex tl:flex-col mb:flex-col gap-[10px] `}
+      >
+        <div className="pc:w-6/12 mb:w-full  pc:pr-[10px]  tl:px-[10px] mb:px-[10px] relative group  rounded-[5px] overflow-hidden">
+          <div className="w-full h-fit flex rounded-[5px]">
             <video
               className="w-full h-full rounded-[5px]"
               controls
@@ -63,7 +74,7 @@ const Banner = () => {
               loop
               preload="auto"
             ></video>
-            <div className="absolute w-[94%] z-10 opacity-0 translate-y-[-20px] group-hover:opacity-100 group-hover:translate-y-0 flex gap-[5px] items-start justify-between top-[5%] right-[2.5%] font-nunito text-white text-[0.9rem] transition-all duration-300 cursor-pointer">
+            <div className="absolute w-[94%] z-10 opacity-0 h-0 translate-y-[-20px] group-hover:opacity-100 group-hover:translate-y-0 flex gap-[5px] items-start justify-between top-[5%] right-[2.5%] font-nunito text-white text-[0.9rem] transition-all duration-300 cursor-pointer">
               <div className="max-w-[400px] rounded-[10px] px-[10px] bg-[#0000005a]">
                 <div className="py-[10px]">
                   Cùng Samsung rước tết, trọn đoàn viên
@@ -285,19 +296,46 @@ const Banner = () => {
             </div>
           </div>
           {user ? (
-            <div className="pc:w-4/12 tl:w-4/12 mb:w-full min-h-full  pl-[10px] flex flex-col items-center  rounded-[5px]">
-              <div
-                className={`w-full pt-[10px] pb-[20px] sticky  top-0 ${
+            <div className="pc:w-4/12 h-fit tl:w-4/12 mb:w-full min-h-full  pc:pl-[10px] mb:px-[10px]">
+              <ul
+                className={`max-h-[400px] sticky top-[20px] overflow-x-hidden overflow-y-auto scrollbar-custom flex flex-col items-center  rounded-[5px] ${
                   isDarkMode
                     ? " bg-white shadow-sm"
-                    : "bg-dark-200 border-[1px] border-border-dark"
+                    : "bg-dark-200 text-light-100 border-transparent"
                 }  rounded-[5px] p-[10px]`}
-              ></div>
+              >
+                {categories ? (
+                  categories.map((cat) => (
+                    <li
+                      key={cat.id}
+                      className={`w-full flex gap-[10px] py-[5px] px-[5px] cursor-pointer ${
+                        isDarkMode ? "hover:bg-[#efefef]" : "hover:bg-[#2e2e2e]"
+                      } rounded-[5px]`}
+                    >
+                      <i className="text-[0.5rem] fa-solid fa-circle-dot mt-[6px]"></i>
+                      <span className="font-nunito font-semibold text-[0.9rem]">
+                        {cat.name}
+                      </span>
+                    </li>
+                  ))
+                ) : (
+                  <li
+                    className={`w-full flex items-center gap-[10px] py-[5px] px-[5px] cursor-pointer ${
+                      isDarkMode ? "hover:bg-[#efefef]" : "hover:bg-[#2e2e2e]"
+                    } rounded-[5px]`}
+                  >
+                    <i className="text-[0.5rem] fa-solid fa-angle-right"></i>
+                    <span className="font-nunito font-semibold text-[0.9rem]">
+                      Chưa có dữ liệu
+                    </span>
+                  </li>
+                )}
+              </ul>
             </div>
           ) : (
-            <div className="pc:w-4/12 tl:w-4/12 mb:w-full min-h-full  pl-[10px] flex flex-col items-center  rounded-[5px]">
+            <div className="pc:w-4/12 tl:w-4/12 mb:w-full min-h-full  pl-[10px] flex flex-col items-center mb:px-[10px]  rounded-[5px]">
               <div
-                className={`w-full pt-[10px] pb-[20px] sticky  top-0 ${
+                className={`w-full pt-[10px] pb-[20px] sticky top-0 ${
                   isDarkMode
                     ? " bg-white shadow-sm"
                     : "bg-dark-200 border-[1px] border-border-dark"
@@ -311,22 +349,22 @@ const Banner = () => {
                     }`}
                   >
                     <h1 className="text-[1.2rem] font-bold">Hãy đăng nhập</h1>
-                    <span className=" text-[1rem] font-light ">
+                    <span className=" text-[0.9rem] font-light ">
                       Để sử dụng nhiều dịch vụ hơn
                     </span>
                   </div>
                 </div>
-                <div className="w-full flex items-center justify-between gap-[10px] py-[20px]">
+                <div className="w-full flex items-center justify-between gap-[10px] py-[20px] ">
                   <Link
                     to="/login"
-                    className={`w-full px-[10px] py-[6px]  rounded-[5px] bg-primary text-white`}
+                    className={`w-full px-[20px] py-[6px]  rounded-[5px] bg-primary text-white`}
                   >
                     {" "}
                     <div className="font-nunito flex items-center justify-center gap-[10px] ">
-                      <span className="pc:text-[1.1rem] mb:text-[1rem] font-bold ">
+                      <span className="pc:text-[0.9rem] mb:text-[1rem] font-bold ">
                         Đăng nhập ngay
                       </span>
-                      <i className="pc:text-[1.4rem] mb:text-[1rem] fa-solid fa-right-to-bracket"></i>
+                      <i className="pc:text-[1rem] mb:text-[1rem] fa-solid fa-right-to-bracket"></i>
                     </div>{" "}
                   </Link>
                 </div>

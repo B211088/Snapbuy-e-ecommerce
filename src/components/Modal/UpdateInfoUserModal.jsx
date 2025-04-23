@@ -5,18 +5,20 @@ import ModalContainer from "./ModalContainer";
 import InputField from "./InputField";
 import SelectField from "./SelectField";
 import DateField from "./DateField";
-import { ToastContainer } from "react-toastify";
-
 import Button from "./Button";
 import { useNotify } from "../Notify/NotifyModal";
+import { useNavigate } from "react-router-dom";
+import { LOCAL_STORAGE_TOKEN_NAME } from "../../contexts/contants";
 
 const UpdateInfoUserModal = ({ onCloseUpdateInfoUserModal }) => {
   const { isDarkMode } = useTheme();
+  const navigate = useNavigate();
   const { notifySuccess, notifyError, notifyWarning } = useNotify();
   const {
     authState: { user },
     updateUserInfo,
   } = useAuth();
+  console.log({ user });
 
   const [formData, setFormData] = useState({
     account: user.account,
@@ -24,8 +26,6 @@ const UpdateInfoUserModal = ({ onCloseUpdateInfoUserModal }) => {
     gender: user.gender,
     birth_date: user.birth_date ? user.birth_date.split("T")[0] : "",
   });
-
-  console.log("formData", formData);
 
   useEffect(() => {
     setFormData({
@@ -45,34 +45,23 @@ const UpdateInfoUserModal = ({ onCloseUpdateInfoUserModal }) => {
   const handleUpdateUserInfo = async () => {
     const { account, fullname, gender, birth_date } = formData;
 
-    if (!account) {
-      notifyWarning("Vui lòng điền đầy đủ thông tin 1", 3000);
-      return;
-    }
-    if (!fullname) {
-      notifyWarning("Vui lòng điền đầy đủ thông tin 2", 3000);
-      return;
-    }
-    if (gender === null) {
-      notifyWarning("Vui lòng điền đầy đủ thông tin 3", 3000);
-      return;
-    }
-    if (!birth_date) {
-      notifyWarning("Vui lòng điền đầy đủ thông tin 4", 3000);
-      return;
-    }
-
     try {
       const response = await updateUserInfo(user.id, formData);
       if (response.success) {
         notifySuccess("Cập nhật thông tin thành công");
         onCloseUpdateInfoUserModal();
+
+        if (user.account !== account) {
+          localStorage.removeItem(LOCAL_STORAGE_TOKEN_NAME);
+          localStorage.removeItem("userId");
+          navigate("/login");
+        }
         return;
       }
-      notifyWarning(response.message, 3000);
+      notifyWarning(response.message);
       return;
     } catch (error) {
-      notifyError(error.message, 3000);
+      notifyError(error.message);
     }
   };
 

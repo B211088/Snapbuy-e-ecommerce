@@ -14,16 +14,12 @@ const Address = () => {
   const { notifySuccess, notifyWarning } = useNotify();
   const { confirm, ConfirmComponent } = useConfirm();
   const {
-    authState: { user },
+    authState: { user, addresses },
   } = useAuth();
-  const {
-    addressState: { addresses },
-    deleteAddressReceiver,
-  } = useAddress();
+  const { deleteAddressReceiver } = useAddress();
 
   const navigate = useNavigate();
   const location = useLocation();
-  console.log(addresses);
   const [addressData, setAddressData] = useState({});
   const [showAddUserAddressModal, setShowAddUserAddressModal] = useState(false);
   const [showUpdateUserAddressModal, setShowUpdateUserAddressModal] =
@@ -242,7 +238,6 @@ const Address = () => {
         )}{" "}
         {showUpdateUserAddressModal && (
           <UpdateAddressModal
-            onSuccess={handleSuccess}
             address={addressData}
             onCloseUpdateAddressModal={onCloseUpdateAddressModal}
           />

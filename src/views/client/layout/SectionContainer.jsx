@@ -5,7 +5,7 @@ const SectionContainer = ({ children }) => {
   const { isDarkMode } = useTheme();
   return (
     <div
-      className={`pc:w-[90%] mb:w-full flex-col my-[20px] rounded-[5px] ${
+      className={`pc:w-[90%] w-full flex flex-col  my-[20px]   rounded-[5px] ${
         isDarkMode ? "bg-white" : "bg-dark-200 text-white"
       } `}
     >

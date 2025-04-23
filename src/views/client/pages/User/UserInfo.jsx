@@ -1,43 +1,42 @@
 import { Outlet } from "react-router-dom";
 import HeaderTop from "../../../../components/Header/HeaderTop";
 import Header from "../../../../components/Header/Header";
-
-import SuggestionsSlide from "../../../../components/header/SuggestionsSlide";
+import SuggestionsSlide from "../../../../components/Header/SuggestionsSlide";
 import ScrollButton from "../../../../components/features/ScrollButton";
-
-import NavUserInfo from "../../../../components/User/NavUserInfo";
 import LayoutModeBackground from "../../layout/LayoutModeBackground";
 import NavDashboard from "../../../../components/Nav/NavDashboard";
+import Footer from "../../../../components/display/Footer";
 
 const UserInfo = () => {
   return (
-    <LayoutModeBackground>
+    <div className="w-full">
       <HeaderTop />
       <Header />
       <SuggestionsSlide />
-      <ScrollButton />
-      <div className="w-full flex flex-col items-center pc:py-[30px] mb:py-[10px]  mb:px-[10px] height-screen-minus-header">
-        <div className="pc:w-[90%] mb:w-full flex gap-[20px]">
-          <div className="">
-            <NavDashboard
-              navList={navList}
-              heightTop={240}
-              basePath={"/userinfo"}
-            />
-          </div>
+      <LayoutModeBackground>
+        <ScrollButton />
+        <div className="w-full flex flex-col items-center pc:py-[30px] mb:py-[10px]  mb:px-[10px] height-screen-minus-header">
+          <div className="pc:w-[90%] tl:w-full mb:w-full flex pc:flex-row flex-col gap-[20px] tl:p-[10px]">
+            <div className="mb:w-full">
+              <NavDashboard
+                navList={navList}
+                heightTop={240}
+                basePath={"/userinfo"}
+              />
+            </div>
 
-          <div
-            className={`flex-1 min-w-[900px] mb:w-full flex flex-col gap-[10px]`}
-          >
-            <div
-              className={`w-full flex items-center justify-between   rounded-[5px] `}
-            >
-              <Outlet />
+            <div className={`flex-1  mb:w-full flex flex-col gap-[10px]`}>
+              <div
+                className={`w-full flex items-center justify-between   rounded-[5px] `}
+              >
+                <Outlet />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </LayoutModeBackground>
+      </LayoutModeBackground>
+      <Footer />
+    </div>
   );
 };
 
@@ -69,13 +68,5 @@ const navList = [
     menuId: "order",
     items: [],
     icon: "fa-solid fa-clipboard-list",
-  },
-  {
-    id: 4,
-    label: "Voucher",
-    path: "/userinfo/voucher",
-    menuId: "voucher",
-    items: [],
-    icon: "fa-solid fa-ticket",
   },
 ];

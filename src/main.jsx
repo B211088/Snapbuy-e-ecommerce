@@ -12,16 +12,16 @@ import { NotifyProvider } from "./components/Notify/NotifyModal.jsx";
 
 createRoot(document.getElementById("root")).render(
   <AuthContextProvider>
-    <NotifyProvider>
-      <AppDataProvider>
-        <ShopContextProvider>
+    <ShopContextProvider>
+      <NotifyProvider>
+        <AppDataProvider>
           <AddressProvider>
             <ThemeProvider>
               <RouterProvider router={router} />
             </ThemeProvider>
           </AddressProvider>
-        </ShopContextProvider>
-      </AppDataProvider>
-    </NotifyProvider>
+        </AppDataProvider>
+      </NotifyProvider>
+    </ShopContextProvider>
   </AuthContextProvider>
 );

@@ -1,9 +1,57 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import ReactECharts from "echarts-for-react";
 import { useTheme } from "../../../Provider/ThemeProvider";
+import { useShop } from "../../../contexts/User/ShopContext";
+import { Link } from "react-router-dom";
 
 const ShopHome = () => {
   const { isDarkMode } = useTheme();
+  const {
+    shopState: { shopInfo },
+    getShopOrderByStatus,
+    getAllProducts,
+  } = useShop();
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [packaginOrders, setPackagingOrders] = useState([]);
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const fetchPendingOrders = async () => {
+      try {
+        const response = await getShopOrderByStatus(shopInfo?.id, "PENDING");
+        if (response.success) {
+          setPendingOrders(response.data);
+        }
+      } catch (error) {
+        setPackagingOrders([]);
+      }
+    };
+
+    const fetchPackagingOrders = async () => {
+      try {
+        const response = await getShopOrderByStatus(shopInfo?.id, "PACKAGING");
+        if (response.success) {
+          setPackagingOrders(response.data);
+        }
+      } catch (error) {
+        setPackagingOrders([]);
+      }
+    };
+    const fetchProducts = async () => {
+      try {
+        const response = await getAllProducts(shopInfo?.id);
+        if (response.success) {
+          setProducts(response.data);
+        }
+      } catch (error) {
+        setProducts([]);
+      }
+    };
+    fetchPendingOrders();
+    fetchPackagingOrders();
+    fetchProducts();
+  }, [shopInfo]);
+
   const chartOptions = {
     tooltip: { trigger: "axis" },
     legend: {
@@ -89,27 +137,39 @@ const ShopHome = () => {
           </div>
           <div className="w-full flex items-center gap-[20px] ">
             <div className="w-3/12 flex flex-col  px-[20px] py-[15px] border-[1px] shadow-sm rounded-[5px]">
-              <div className="w-full flex justify-between">
+              <Link
+                to="/shopdashboard/orders"
+                className="w-full flex justify-between"
+              >
                 <h1 className="text-[0.8rem] font-bold h-[32px]">
-                  Chờ lấy hàng
+                  Đơn chờ xác nhận
                 </h1>
                 <div className="text-[0.8rem] text-gray-500">
                   <i className="fa-solid fa-hourglass-half"></i>
                 </div>
-              </div>
+              </Link>
               <div className="w-full flex justify-between text-[1.3rem] font-bold">
-                <span className="text-blue-600 font-kanit">0</span>
+                <span className="text-blue-600 font-kanit">
+                  {pendingOrders.length}
+                </span>
               </div>
             </div>
             <div className="w-3/12 flex flex-col  px-[20px] py-[15px] border-[1px] shadow-sm rounded-[5px]">
-              <div className="w-full flex justify-between">
-                <h1 className="text-[0.8rem] font-bold h-[32px]">Đã xử lý</h1>
+              <Link
+                to="/shopdashboard/orders/shipping"
+                className="w-full flex justify-between"
+              >
+                <h1 className="text-[0.8rem] font-bold h-[32px]">
+                  Cần giao hàng
+                </h1>
                 <div className="text-[0.8rem] text-gray-500">
                   <i className="fa-solid fa-square-check"></i>
                 </div>
-              </div>
+              </Link>
               <div className="w-full flex justify-between text-[1.3rem] font-bold">
-                <span className="text-blue-600 font-kanit">0</span>
+                <span className="text-blue-600 font-kanit">
+                  {packaginOrders.length}
+                </span>
               </div>
             </div>
             <div className="w-3/12 flex flex-col  px-[20px] py-[15px] border-[1px] shadow-sm rounded-[5px]">
@@ -140,7 +200,8 @@ const ShopHome = () => {
             </div>
           </div>
         </div>
-      </div>{" "}
+      </div>
+
       <div
         className={`w-full flex flex-col rounded-[5px] ${
           isDarkMode ? "bg-light-100 " : "bg-dark-200 text-light-100"
@@ -152,24 +213,27 @@ const ShopHome = () => {
           </div>{" "}
           <div className="w-full flex items-center gap-[20px]">
             {" "}
-            <div className="w-[20%] flex flex-col  px-[0px] py-[0px]  rounded-[5px]">
+            <Link
+              to="/shopdashboard/products/list/all"
+              className="w-[20%] flex flex-col  px-[0px] py-[0px]  rounded-[5px]"
+            >
               <div className="w-full flex items-center  ">
                 <span className="text-[0.8rem] font-bold ">Tổng sản phẩm</span>
               </div>
               <div className="w-full flex   text-[1.3rem] font-bold">
                 <span className="text-blue-600 font-kanit">
-                  {0}
+                  {products.length}
                   <span className="text-[0.9rem] ml-[5px]">sản phẩm</span>
                 </span>
               </div>
-            </div>{" "}
+            </Link>{" "}
             <div className="w-[20%] flex flex-col  px-[0px] py-[0px]  rounded-[5px]">
               <div className="w-full flex items-center  ">
                 <span className="text-[0.8rem] font-bold ">Đang bán</span>
               </div>
               <div className="w-full flex   text-[1.3rem] font-bold">
                 <span className="text-blue-600 font-kanit">
-                  {0}
+                  {products.length}
                   <span className="text-[0.9rem] ml-[5px]">sản phẩm</span>
                 </span>
               </div>

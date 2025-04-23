@@ -61,7 +61,9 @@ const Login = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
     if (rememberMe) {
       localStorage.setItem("rememberedUsername", formData.account);
     } else {
@@ -84,7 +86,7 @@ const Login = () => {
     try {
       const response = await loginUser({ ...formData, account, password });
 
-      if (response?.status === 200) {
+      if (response?.success) {
         notifySuccess("Đăng nhập thành công!", 3000, isDarkMode);
         return;
       }
@@ -133,7 +135,10 @@ const Login = () => {
               Vui lòng nhập thông tin đăng nhâp
             </p>
           </div>
-          <div className="flex flex-col mt-[20px] gap-[20px]">
+          <form
+            onSubmit={handleLogin}
+            className="flex flex-col mt-[20px] gap-[20px]"
+          >
             <div
               className={`w-full flex items-center ${
                 isDarkMode ? "border-[1px]" : "bg-dark-200"
@@ -198,12 +203,12 @@ const Login = () => {
               </a>
             </div>
             <button
+              type="submit"
               className="w-full outline-none px-[10px] py-[8px] rounded-[5px]  text-[1rem] text-white font-bold bg-primary"
-              onClick={handleLogin}
             >
               Đăng nhập
             </button>
-          </div>
+          </form>
           <div className="w-full flex  mt-[20px] gap-[20px] border-t-[1px] border-dashed py-[20px] ">
             <div
               className={`w-6/12 flex items-center justify-center  py-[5px] rounded-[5px] font-bold gap-[10px] cursor-pointer ${

@@ -38,7 +38,7 @@ const NavItem = ({ payload, basePath, currentPath }) => {
             end
             className={({ isActive }) =>
               `w-full flex items-center gap-[10px] py-[6px] px-[5px] ${
-                isActive ? "text-red-500 font-bold" : ""
+                isActive ? "text-primary font-bold" : ""
               }`
             }
           >
@@ -104,7 +104,7 @@ const NavItem = ({ payload, basePath, currentPath }) => {
                   to={`${basePath}/${item.href}`}
                   end
                   className={({ isActive }) =>
-                    `${isActive ? "text-red-500 font-bold" : ""}`
+                    `${isActive ? "text-primary font-bold" : ""}`
                   }
                 >
                   {item.label}

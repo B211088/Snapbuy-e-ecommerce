@@ -1,29 +1,32 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useTheme } from "../../Provider/ThemeProvider";
-
 import { useAppData } from "../../contexts/client/AppDataContext";
-
+import { debounce } from "lodash";
+import { Link } from "react-router-dom";
 const SearchModal = ({ onCloseSearchModal }) => {
+  const { isDarkMode } = useTheme();
+  const {
+    categoriesState: { categories, subcategories },
+    getSubCategories,
+    getProductsByKeyword,
+  } = useAppData();
   const [subCategories, setSubCategories] = useState({});
-  const { isDarkMode, toggleTheme } = useTheme();
+
   const [isVisible, setIsVisible] = useState(false);
   const [category, setCategory] = useState(null);
   const inputRef = useRef(null);
+
+  const [productsSearched, setProductsSearched] = useState([]);
+  const [keywordSearch, setKeyword] = useState("");
 
   useEffect(() => {
     setIsVisible(true);
     if (inputRef.current) {
       inputRef.current.focus();
     }
+
     return () => setIsVisible(false);
   }, []);
-
-  const {
-    categoriesState: { categories, subcategories },
-    getSubCategories,
-  } = useAppData();
-
-  console.log(categories);
 
   const getSubByCategoryId = (categoryId) => {
     return (
@@ -43,9 +46,35 @@ const SearchModal = ({ onCloseSearchModal }) => {
           }));
         }
       } catch (error) {
-        console.error("Lỗi lấy danh mục con:", error);
+        setSubCategories({});
       }
     }
+  };
+
+  const debouncedSearch = useCallback(
+    debounce(async (searchTerm) => {
+      if (!searchTerm.trim()) return;
+      try {
+        const response = await getProductsByKeyword(searchTerm, 0, 10);
+        if (response.success) {
+          setProductsSearched(response.data.product_keyword_responses);
+          return;
+        }
+        setProductsSearched([]);
+      } catch (error) {
+        setProductsSearched([]);
+      }
+    }, 500),
+    []
+  );
+
+  const handleChange = (e) => {
+    const value = e.target.value;
+    if (!value) {
+      setProductsSearched([]);
+    }
+    setKeyword(value);
+    debouncedSearch(value);
   };
 
   return (
@@ -82,19 +111,61 @@ const SearchModal = ({ onCloseSearchModal }) => {
               </select>
             </div>
             <div
-              className={`w-full h-[42px] flex items-center gap-[5px] pl-[10px] pr-[3px] py-[2px] ${
+              className={`w-full h-[42px] flex items-center gap-[5px] ${
                 isDarkMode ? "bg-white" : "bg-[#1f1f1f]"
-              } shadow-sm rounded-[5px]`}
+              } shadow-sm rounded-[5px] `}
             >
-              <input
-                ref={inputRef}
-                className="w-full font-nunito font-light text-[0.9rem] outline-none bg-transparent"
-                type="text"
-                placeholder="Tìm kiếm sản phẩm"
-              />
-              <button className="w-[100px] h-[32px] flex items-center gap-[3px] outline-none justify-center text-white font-nunito font-medium cursor-pointer bg-[#797979] rounded-[5px]">
-                <i className="fa-solid fa-magnifying-glass"></i>
-              </button>
+              <div className="w-full relative px-[10px]">
+                <input
+                  ref={inputRef}
+                  className="w-full font-nunito font-light text-[0.9rem] outline-none bg-transparent"
+                  type="text"
+                  value={keywordSearch}
+                  placeholder="Tìm kiếm sản phẩm"
+                  onChange={handleChange}
+                />
+                {productsSearched.length > 0 && (
+                  <ul
+                    className={`absolute flex flex-col top-[140%] right-0 w-full  rounded-[5px] ${
+                      isDarkMode
+                        ? "border-[1px] bg-light-100 shadow-sm "
+                        : "bg-dark-300"
+                    } `}
+                  >
+                    {productsSearched?.map((item) => {
+                      return (
+                        <Link
+                          to={`/search?keyword=${encodeURIComponent(
+                            item.name
+                          )}`}
+                          onClick={onCloseSearchModal}
+                          key={item.id}
+                          className={`w-full flex items-center gap-[10px] px-[10px] py-[10px] rounded-[5px] font-nunito text-[0.9rem] cursor-pointer ${
+                            isDarkMode ? "hover:bg-red-50" : "hover:bg-dark-400"
+                          }`}
+                        >
+                          <div className="w-[40px] flex rounded-[3px] overflow-hidden">
+                            <img
+                              className="w-full h-full aspect-square object-cover"
+                              src={item?.thumbnail_response.avatar_url}
+                              alt=""
+                            />
+                          </div>
+                          <span>{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+              <div className="w-[100px] h-[32px]  pr-[5px]">
+                <button
+                  onClick={() => debouncedSearch(keywordSearch)}
+                  className="w-full h-full flex items-center gap-[3px] outline-none justify-center text-white font-nunito font-medium cursor-pointer bg-[#797979] rounded-[5px]"
+                >
+                  <i className="fa-solid fa-magnifying-glass"></i>
+                </button>
+              </div>
             </div>
           </div>
           <div className="w-full  flex pc:flex-row mb:flex-col justify-between gap-[20px] text-black">

@@ -1,452 +1,409 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import HeaderTop from "../../../../components/Header/HeaderTop";
 import Header from "../../../../components/Header/Header";
 import { useTheme } from "../../../../Provider/ThemeProvider";
-import sanpham1 from "../../../../assets/images/sanpham1.webp";
-import sanpham2 from "../../../../assets/images/sanpham2.webp";
-import sanpham3 from "../../../../assets/images/sanpham3.jpg";
-import InfoShop from "../../../../components/Products/InfoShop";
-import CoupouList from "../../../../components/features/CoupouList";
-import QuanlityProduct from "../../../../components/header/QuanlityProduct";
-import SuggestionsSlide from "../../../../components/header/SuggestionsSlide";
-import AttributeProduct from "../../../../components/features/AttributeProduct";
+import SuggestionsSlide from "../../../../components/Header/SuggestionsSlide";
 import PathAccess from "../../../../components/features/PathAccess";
 import LayoutModeBackground from "../../layout/LayoutModeBackground";
 import { useAuth } from "../../../../contexts/User/AuthContext";
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import Loading from "../../pages/Loading";
+import CheckoutBar from "../../../../components/features/CheckoutBar";
+import ShopSection from "../../../../components/features/ShopSection";
+import EmptyCart from "../../../../components/Shop/display/EmptyCart ";
+import { useNotify } from "../../../../components/Notify/NotifyModal";
+import { useConfirm } from "../../../../components/Notify/ConfirmModal";
 
 const Cart = () => {
   const { isDarkMode } = useTheme();
+  const { confirm, ConfirmComponent } = useConfirm();
+  const { notifySuccess, notifyWarning, notifyError } = useNotify();
   const {
     authState: { user },
+    cartState: { carts },
+    deleteProductFromCart,
   } = useAuth();
 
-  console.log(user);
+  const navigate = useNavigate();
+  const [selectedItems, setSelectedItems] = useState({});
+  const [selectAll, setSelectAll] = useState(false);
+  const [cartProducts, setCartProducts] = useState([]);
+  const [productListSelected, setProductListSelected] = useState([]);
+  const [groupedProducts, setGroupedProducts] = useState({});
+  const [totalCartItems, setTotalCartItems] = useState(0);
+  const [productListDelete, setProductListDelete] = useState([]);
+
+  console.log({ cartProducts });
+
+  // Transform and flatten the cart data structure for easier handling
+  useEffect(() => {
+    if (!carts || carts.length === 0) {
+      setCartProducts([]);
+      setTotalCartItems(0);
+      return;
+    }
+
+    let flattenedProducts = [];
+    let count = 0;
+
+    carts.forEach((shop) => {
+      if (shop.cart_item_response && Array.isArray(shop.cart_item_response)) {
+        const productsWithShopInfo = shop.cart_item_response.map((item) => ({
+          ...item,
+          shop_id: shop.shop_info_response?.id,
+          shop_name: shop.shop_info_response?.shop_name,
+        }));
+
+        flattenedProducts = [...flattenedProducts, ...productsWithShopInfo];
+        count += shop.cart_item_response.length;
+      }
+    });
+
+    setCartProducts(flattenedProducts);
+    setTotalCartItems(count);
+
+    // Group products by shop
+    const groupedByShop = {};
+    flattenedProducts.forEach((product) => {
+      const shopId = product.shop_id;
+      if (!groupedByShop[shopId]) {
+        groupedByShop[shopId] = {
+          shopInfo: {
+            id: product.shop_id,
+            name: product.shop_name,
+          },
+          products: [],
+        };
+      }
+      groupedByShop[shopId].products.push(product);
+    });
+
+    setGroupedProducts(groupedByShop);
+  }, [carts]);
+
+  const handleDeleteAllProductOutCart = async () => {
+    confirm({
+      message: "Bạn có chắc chắn muốn xóa sản phẩm khỏi đơn giỏ hàng không?",
+      onConfirm: async () => {
+        try {
+          const cartDeletePromise = productListDelete.map((product) => {
+            return deleteProductFromCart(user?.id, product);
+          });
+
+          const results = await Promise.all(cartDeletePromise);
+          const allSuccess = results.every((result) => result.success);
+          if (allSuccess) {
+            notifySuccess("Xóa sản phẩm khỏi giỏ hàng thành công");
+            setSelectAll(false);
+
+            return;
+          } else {
+            notifyWarning("Xóa sản phẩm thất bại");
+            return;
+          }
+        } catch (error) {
+          console.error("Error placing order:", error);
+          notifyError("Xóa sản phẩm thất bại. Vui lòng thử lại sau.");
+        }
+      },
+      onCancel: () => {
+        return;
+      },
+    });
+  };
+
+  const handleOrder = useCallback(() => {
+    navigate("/checkout", {
+      state: { orderProductListState: productListSelected },
+    });
+  }, [navigate, productListSelected]);
+
+  const handleRemoveAllProductSelected = useCallback(() => {
+    setSelectAll(false);
+    setSelectedItems({});
+    setProductListSelected([]);
+  }, []);
+
+  const handleQuantityChange = useCallback((productId, newQuantity) => {
+    setCartProducts((prevProducts) =>
+      prevProducts.map((item) =>
+        item.cart_item_id === productId
+          ? { ...item, quantity: newQuantity }
+          : item
+      )
+    );
+  }, []);
+
+  const updateSelectedProductList = useCallback(
+    (selectedItemsMap) => {
+      const selectedProducts = cartProducts.filter(
+        (product) => selectedItemsMap[product.cart_item_id]
+      );
+
+      const groupedByShop = {};
+
+      // First, make sure we can map each cart_item_id to its correct shop_id
+      const shopIdMapping = {};
+      carts.forEach((shopData) => {
+        const shopInfo = shopData.shop_info_response;
+        shopData.cart_item_response.forEach((item) => {
+          shopIdMapping[item.cart_item_id] = shopInfo.id;
+        });
+      });
+
+      selectedProducts.forEach((product) => {
+        // Use the mapping to get the correct shop_id
+        const shopId = shopIdMapping[product.cart_item_id];
+
+        if (!groupedByShop[shopId]) {
+          const shopInfo = carts.find(
+            (shopData) => shopData.shop_info_response.id === shopId
+          )?.shop_info_response;
+          const shipingTypes = carts.find(
+            (shopData) => shopData.shop_info_response.id === shopId
+          )?.shipping_type_responses;
+
+          groupedByShop[shopId] = {
+            user_id: user?.id,
+            shop_id: shopId,
+            quantityProduct: 0,
+            order_detail_dtos: [],
+            infoShop: {
+              shop_name: shopInfo?.shop_name || "",
+              logo: shopInfo?.logo || "",
+              description: shopInfo?.description || "",
+            },
+            shipping_types: shipingTypes,
+          };
+        }
+
+        groupedByShop[shopId].order_detail_dtos.push({
+          cart_item_id: product.cart_item_id,
+          product_id: product.product_id,
+          thumbnail: product.product_category_image?.avatar_url || "",
+          name: product.product_name,
+          product_option: {
+            id: product?.product_category_id,
+            name: product?.product_category_name,
+          },
+          sub_product_option: {
+            id: product?.subcategory_id,
+            name: product?.subcategory_name,
+          },
+          quantity: product.quantity,
+          price: product.price,
+        });
+
+        groupedByShop[shopId].quantityProduct += product.quantity;
+      });
+
+      const result = Object.values(groupedByShop);
+      setProductListSelected(result);
+    },
+    [cartProducts, carts, user]
+  );
+
+  // Memoized functions to prevent unnecessary recalculations
+  const getMaxEligibleDiscount = useCallback((item) => {
+    if (item.discount_percent <= 0) return 0;
+
+    const eligibleDiscount = item.discount_percent;
+
+    if (eligibleDiscount <= 0) return 0;
+
+    return eligibleDiscount;
+  }, []);
+
+  const calculateTotal = useCallback(() => {
+    return cartProducts.reduce((total, item) => {
+      if (!selectedItems[item.cart_item_id]) return total;
+
+      const discountPercent = getMaxEligibleDiscount(item);
+      if (discountPercent) {
+        const discountedPrice = item.price * (1 - discountPercent / 100);
+        return total + discountedPrice * item.quantity;
+      }
+      const discountedPrice = item.price;
+      return total + discountedPrice * item.quantity;
+    }, 0);
+  }, [cartProducts, selectedItems, getMaxEligibleDiscount]);
+
+  const calculateTotalDiscount = useCallback(() => {
+    if (!cartProducts || cartProducts.length === 0) return 0;
+
+    return cartProducts.reduce((total, item) => {
+      if (!selectedItems[item.cart_item_id]) return total;
+
+      const discountPercent = getMaxEligibleDiscount(item);
+      if (!discountPercent) return total;
+
+      const discountAmount =
+        item.price * (discountPercent / 100) * item.quantity;
+      return total + discountAmount;
+    }, 0);
+  }, [cartProducts, selectedItems, getMaxEligibleDiscount]);
+
+  // Selection handlers
+  const handleItemSelect = useCallback(
+    (productId) => {
+      setSelectedItems((prev) => {
+        const newSelectedItems = {
+          ...prev,
+          [productId]: !prev[productId],
+        };
+
+        // Call updateSelectedProductList with the new state
+        setTimeout(() => updateSelectedProductList(newSelectedItems), 0);
+
+        return newSelectedItems;
+      });
+      setProductListDelete([...productListDelete, productId]);
+    },
+    [updateSelectedProductList]
+  );
+
+  const handleShopSelect = useCallback(
+    (shopId) => {
+      const shopProducts = groupedProducts[shopId].products;
+      const allSelected = shopProducts.every(
+        (product) => selectedItems[product.cart_item_id]
+      );
+
+      setSelectedItems((prev) => {
+        const newSelectedItems = { ...prev };
+        shopProducts.forEach((product) => {
+          newSelectedItems[product.cart_item_id] = !allSelected;
+        });
+
+        // Cập nhật danh sách sản phẩm đã chọn
+        const selectedIds = Object.entries(newSelectedItems)
+          .filter(([_, value]) => value === true)
+          .map(([key]) => Number(key));
+
+        setProductListDelete(selectedIds);
+
+        // Gọi callback sau khi cập nhật
+        setTimeout(() => updateSelectedProductList(newSelectedItems), 0);
+
+        return newSelectedItems;
+      });
+    },
+    [groupedProducts, selectedItems, updateSelectedProductList]
+  );
+
+  const handleSelectAll = useCallback(() => {
+    const newSelectAll = !selectAll;
+
+    setSelectAll(newSelectAll);
+
+    const newSelectedItems = {};
+    cartProducts.forEach((product) => {
+      newSelectedItems[product.cart_item_id] = newSelectAll;
+    });
+
+    setSelectedItems(newSelectedItems);
+    setProductListDelete(
+      Object.entries(newSelectedItems)
+        .filter(([_, value]) => value === true)
+        .map(([key]) => Number(key))
+    );
+    updateSelectedProductList(newSelectedItems);
+  }, [selectAll, cartProducts, updateSelectedProductList]);
+
+  // Calculate total items selected
+  const totalSelectedItems = useMemo(
+    () => Object.values(selectedItems).filter(Boolean).length,
+    [selectedItems]
+  );
+
+  if (!carts) {
+    return <Loading />;
+  }
 
   return (
-    <LayoutModeBackground>
+    <div className="w-full">
+      {" "}
       <HeaderTop />
       <Header />
-      <SuggestionsSlide />
-      <PathAccess />
-      <div className="pc:w-full  flex justify-center pc:my-[20px]    mb:px-[0px]">
-        <div className="pc:w-[90%] tl:w-full mb:w-full  flex mb:flex-col mb:justify-center gap-[20px]  mb:px-[10px] shadow-sm">
-          <div
-            className={`pc:w-full tl:w-full mb:w-full ${
-              isDarkMode ? "bg-white" : "bg-dark-200 text-white"
-            }  py-[10px] pc:px-[20px] tl:px-[10px] mb:px-[10px] rounded-[5px]`}
-          >
-            <ul className="w-full flex flex-col items-center gap-[20px] mt-[20px] ">
-              {cardContent.map((item) => (
-                <li
-                  key={item.id}
-                  className={`w-full flex flex-col items-center  pt-[0px] pb-[15px] px-[10px] rounded-[5px] ${
-                    isDarkMode
-                      ? "bg-white text-dark-100 border-[1px]"
-                      : "bg-dark-400 text-white"
+      <SuggestionsSlide />{" "}
+      <LayoutModeBackground>
+        <PathAccess />
+        <ConfirmComponent />
+        <div className="pc:w-full flex justify-center mb:px-[0px] pb-[120px]">
+          <div className="pc:w-[90%] tl:w-full mb:w-full flex mb:flex-col mb:justify-center gap-[20px] mb:px-[10px] shadow-sm">
+            <div
+              className={`pc:w-full h-fit tl:w-full mb:w-full ${
+                isDarkMode ? "bg-white" : "bg-dark-200 text-white"
+              }   rounded-[5px]`}
+            >
+              {/* Select All Header */}
+              <div
+                className={`w-full flex justify-between items-center pc:p-[20px] tl:px-[10px] mb:px-[10px] mb-4 border-b-[1px] border-dashed ${
+                  isDarkMode ? "border-dark-200" : "border-dark-400"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                    className="w-5 h-5 cursor-pointer"
+                  />
+                  <span className="font-medium">
+                    Chọn tất cả ({totalCartItems} sản phẩm)
+                  </span>
+                </div>
+                <button
+                  onClick={handleDeleteAllProductOutCart}
+                  className={`text-red-500 font-medium ${
+                    totalSelectedItems === 0
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer"
                   }`}
+                  disabled={totalSelectedItems === 0}
                 >
-                  <div className="w-full flex items-center justify-between ">
-                    <InfoShop info={item.infoShop} />
-                    <div
-                      className={`p-[5px] w-[25px] h-[25px] flex items-center justify-center ${
-                        isDarkMode ? "bg-white " : "bg-dark-400"
-                      } `}
-                    >
-                      <input
-                        className="w-full h-full outline-none cursor-pointer bg-transparent"
-                        type="checkbox"
-                        name=""
-                        id=""
-                      />
-                    </div>
-                  </div>{" "}
-                  <div className="w-full flex items-center px-[10px]  py-[10px] bg-dark-900 mb-[10px] rounded-[5px]">
-                    <CoupouList coupouList={item.coupous} />
-                  </div>
-                  <div className="w-full h-full flex mb:flex-col  gap-[20px] mb:gap-[10px]  ">
-                    <div className="pc:max-w-[100px] pc:max-h-[100px] tl:max-w-[120px] tl:max-h-[140px]  mb:min-w-full  flex justify-between  ">
-                      <img
-                        className=" w-full h-full aspect-square   rounded-[5px] object-cover"
-                        src={item.thumbnail[0]}
-                        alt=""
-                      />
-                    </div>{" "}
-                    <div className="w-full  flex items-center mb:flex-col gap-[20px] mb:gap-[10px] justify-between ">
-                      <div className="w-3/12 font-nunito font-bold pc:text-[1rem] tl:text-[1rem] mb:text-[1rem]">
-                        {item.nameProduct}
-                      </div>
-                      <div className="w-2/12 flex items-center   ">
-                        <AttributeProduct />
-                      </div>
-                      <div className="w-2/12 flex items-center justify-center ">
-                        <div className=" flex items-center gap-[10px]">
-                          {(() => {
-                            const discountVoucher = item.coupous.find(
-                              (coupou) => coupou.tag === "discount"
-                            );
+                  Xóa đã chọn ra khỏi giỏ hàng
+                </button>
+              </div>
 
-                            const discountedPrice = discountVoucher
-                              ? item.price *
-                                (1 - discountVoucher.treatment / 100)
-                              : item.price;
+              {/* Shops and their products */}
+              {cartProducts.length > 0 ? (
+                <ul className="w-full flex flex-col items-center gap-[20px] mt-[20px] pc:px-[10px] pt-[10px] pb-[20px]  tl:px-[10px] mb:px-[10px]">
+                  {Object.values(groupedProducts).map((shop) => (
+                    <ShopSection
+                      key={shop.shopInfo.id}
+                      shop={shop}
+                      selectedItems={selectedItems}
+                      handleShopSelect={handleShopSelect}
+                      handleItemSelect={handleItemSelect}
+                      handleQuantityChange={handleQuantityChange}
+                      isDarkMode={isDarkMode}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <EmptyCart navigate={navigate} />
+              )}
+            </div>
 
-                            return (
-                              <>
-                                <span className="font-semibold pc:text-[1.1rem] tl:text-[1rem] mb:text-[1rem] ">
-                                  {discountedPrice.toLocaleString("vi-VN")}đ
-                                </span>
-
-                                {discountVoucher && (
-                                  <span
-                                    className={`font-semibold mt-[3px] pc:text-[0.9rem] tl:text-[0.8rem] mb:text-[0.8rem] line-through ${
-                                      isDarkMode
-                                        ? "text-[#292929]"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    {item.price.toLocaleString("vi-VN")}đ
-                                  </span>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                      <div className="w-2/12 flex items-center justify-center">
-                        <div className="w-full h-[30px] flex ">
-                          <QuanlityProduct defaultQuanlity={item.quanlity} />
-                        </div>
-                      </div>{" "}
-                      <div className="w-2/12 flex items-center justify-center ">
-                        <div className=" flex items-center gap-[10px]">
-                          {(() => {
-                            const discountVoucher = item.coupous.find(
-                              (coupou) => coupou.tag === "discount"
-                            );
-
-                            const discountedPrice = discountVoucher
-                              ? item.price *
-                                (1 - discountVoucher.treatment / 100)
-                              : item.price;
-
-                            return (
-                              <>
-                                <span className="font-semibold pc:text-[1.2rem] tl:text-[1rem] mb:text-[1rem] text-[#ee2f2f]">
-                                  {discountedPrice.toLocaleString("vi-VN")}đ
-                                </span>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                      <div
-                        className={`p-[5px] w-[25px] h-[25px] flex items-center justify-center ${
-                          isDarkMode ? "bg-white " : "bg-dark-400"
-                        } `}
-                      >
-                        <input
-                          className="w-full h-full outline-none cursor-pointer bg-transparent"
-                          type="checkbox"
-                          name=""
-                          id=""
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="w-full fixed bottom-0 left-0 flex justify-center  z-50  bg-white">
-            <div className="w-[90%] h-[100px]  sticky top-0   pc:rounded-[5px] shadow-sm mb:border-t-[1px]"></div>
+            {/* Checkout Fixed Bottom Bar */}
+            {cartProducts.length > 0 && (
+              <CheckoutBar
+                isDarkMode={isDarkMode}
+                selectAll={selectAll}
+                handleSelectAll={handleSelectAll}
+                totalSelectedItems={totalSelectedItems}
+                calculateTotal={calculateTotal}
+                calculateTotalDiscount={calculateTotalDiscount}
+                handleOrder={handleOrder}
+              />
+            )}
           </div>
         </div>
-      </div>
-    </LayoutModeBackground>
+      </LayoutModeBackground>
+    </div>
   );
 };
 
 export default Cart;
-const cardContent = [
-  {
-    id: 1,
-    thumbnail: [sanpham1, sanpham2],
-    infoShop: {
-      nameShop: "Mozzi",
-      shopTag: "Shop thú cưng",
-      avatarShop: sanpham3,
-      score: 1000,
-    },
-
-    nameProduct: "Combo 10 gói cá tuyết sấy nhà Mozzi",
-    price: 240000,
-    sales: 999,
-    quanlity: 2,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 50 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 2,
-    thumbnail: [sanpham2, sanpham3],
-    infoShop: {
-      nameShop: "Pet Paradise",
-      shopTag: "Dịch vụ thú cưng",
-      avatarShop: sanpham1,
-      score: 4000,
-    },
-
-    nameProduct: "Thức ăn cho chó vị gà nhập khẩu",
-    price: 150000,
-    sales: 20000,
-    quanlity: 2,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 30 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 20 },
-    ],
-  },
-  {
-    id: 3,
-    thumbnail: [sanpham3, sanpham1],
-    infoShop: {
-      nameShop: "Cún Cưng",
-      shopTag: "Phụ kiện thú cưng",
-      avatarShop: sanpham2,
-      score: 4000,
-    },
-    nameProduct: "Dây dắt chó bền đẹp, chống rối",
-    price: 80000,
-    sales: 1500,
-    quanlity: 6,
-    coupous: [
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 4,
-    thumbnail: [sanpham1, sanpham3],
-    infoShop: {
-      nameShop: "Meow Meow Store",
-      shopTag: "Thức ăn mèo",
-      avatarShop: sanpham1,
-      score: 500,
-    },
-
-    nameProduct: "Hạt dinh dưỡng cao cấp cho mèo",
-    price: 300000,
-    sales: 35000,
-    quanlity: 2,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 60 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 5,
-    thumbnail: [sanpham2, sanpham1],
-    infoShop: {
-      nameShop: "Happy Paws",
-      shopTag: "Phụ kiện & Thức ăn",
-      avatarShop: sanpham3,
-      score: 100,
-    },
-
-    nameProduct: "Ổ nằm cho thú cưng bằng vải cotton",
-    price: 500000,
-    sales: 99,
-    quanlity: 7,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 30 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 6,
-    thumbnail: [sanpham3, sanpham2],
-    infoShop: {
-      nameShop: "Animal Lover",
-      shopTag: "Dụng cụ vệ sinh",
-      avatarShop: sanpham2,
-      score: 0,
-    },
-
-    nameProduct: "Hộp cát vệ sinh cho mèo tự động",
-    price: 1200000,
-    sales: 20,
-    quanlity: 3,
-    coupous: [
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 7,
-    thumbnail: [sanpham1, sanpham2],
-    infoShop: {
-      nameShop: "Choco Pet",
-      shopTag: "Shop chó mèo",
-      avatarShop: sanpham3,
-      score: 600,
-    },
-
-    nameProduct: "Dầu tắm dưỡng lông hương hoa cỏ",
-    price: 180000,
-    sales: 400,
-    quanlity: 5,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 20 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 8,
-    thumbnail: [sanpham2, sanpham3],
-    infoShop: {
-      nameShop: "Purrfection Store",
-      shopTag: "Phụ kiện mèo",
-      avatarShop: sanpham1,
-      score: 700,
-    },
-
-    nameProduct: "Bàn cào móng mèo đa năng kèm đồ chơi",
-    price: 250000,
-    sales: 520,
-    quanlity: 1,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 50 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 9,
-    thumbnail: [sanpham1, sanpham3],
-    infoShop: {
-      nameShop: "Woof & Meow",
-      shopTag: "Thức ăn thú cưng",
-      avatarShop: sanpham2,
-      score: 200,
-    },
-
-    nameProduct: "Thức ăn khô cao cấp dành cho chó lớn",
-    price: 700000,
-    sales: 80,
-    quanlity: 1,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 20 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 10,
-    thumbnail: [sanpham3, sanpham1],
-    infoShop: {
-      nameShop: "Cozy Pets",
-      shopTag: "Chăm sóc thú cưng",
-      avatarShop: sanpham3,
-      score: 400,
-    },
-
-    nameProduct: "Giường ngủ sang trọng cho thú cưng",
-    price: 800000,
-    sales: 150,
-    quanlity: 9,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 30 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 11,
-    thumbnail: [sanpham1, sanpham2],
-    infoShop: {
-      nameShop: "Pawfection",
-      shopTag: "Dịch vụ thú cưng",
-      avatarShop: sanpham1,
-      score: 300,
-    },
-
-    nameProduct: "Balo đựng thú cưng trong suốt tiện lợi",
-    price: 350000,
-    sales: 400,
-    quanlity: 12,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 70 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 12,
-    thumbnail: [sanpham2, sanpham3],
-    infoShop: {
-      nameShop: "Tail Waggers",
-      shopTag: "Đồ chơi thú cưng",
-      avatarShop: sanpham2,
-      score: 1000,
-    },
-
-    nameProduct: "Bóng cao su phát sáng cho thú cưng",
-    price: 120000,
-    sales: 500,
-    quanlity: 4,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 10 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 13,
-    thumbnail: [sanpham3, sanpham2],
-    infoShop: {
-      nameShop: "Furry Friends",
-      shopTag: "Phụ kiện thú cưng",
-      avatarShop: sanpham1,
-      score: 900,
-    },
-
-    nameProduct: "Áo hoodie thời trang cho chó mèo",
-    price: 180000,
-    sales: 2400,
-    quanlity: 1,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 5 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 14,
-    thumbnail: [sanpham1, sanpham3],
-    infoShop: {
-      nameShop: "Kitty Haven",
-      shopTag: "Thức ăn mèo",
-      avatarShop: sanpham3,
-      score: 10000,
-    },
-
-    nameProduct: "Thức ăn ướt cao cấp cho mèo vị cá ngừ",
-    price: 400000,
-    sales: 120000,
-    quanlity: 1,
-    coupous: [
-      { id: 1, tag: "discount", nameVoucher: "Giảm giá", treatment: 20 },
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-  {
-    id: 15,
-    thumbnail: [sanpham2, sanpham1],
-    infoShop: {
-      nameShop: "Happy Tails",
-      shopTag: "Thức ăn & Phụ kiện",
-      avatarShop: sanpham2,
-      score: 1000,
-    },
-
-    nameProduct: "Bát ăn chống trượt cho thú cưng",
-    price: 90000,
-    sales: 650,
-    quanlity: 2,
-    coupous: [
-      { id: 2, tag: "shipping", nameVoucher: "Trợ ship", treatment: 50 },
-    ],
-  },
-];

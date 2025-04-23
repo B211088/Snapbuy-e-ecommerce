@@ -9,7 +9,7 @@ const HeaderFlexibleView = ({ title }) => {
   const { isDarkMode } = useTheme();
   return (
     <div
-      className={`w-full  flex justify-center ${
+      className={`w-full  flex justify-center  ${
         isDarkMode
           ? "bg-dark-1000 text-dark-100 border-b-[1px]  border-dark-900  shadow-sm"
           : "bg-dark-200  text-light-100 border-b-[1px]  border-dark-400  shadow-sm"

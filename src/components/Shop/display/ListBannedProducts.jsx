@@ -173,37 +173,4 @@ const ListBannedProducts = () => {
 
 export default ListBannedProducts;
 
-const violationProducts = [
-  {
-    id: 1,
-    name: "Xương gặm cho chó",
-    time: "2025-03-20 14:30",
-    violationType: "Hàng hóa không đúng mô tả",
-    banDuration: "30 ngày",
-    action: "Xem chi tiết",
-  },
-  {
-    id: 2,
-    name: "Áo quần cho chó mèo",
-    time: "2025-03-18 10:00",
-    violationType: "Hình ảnh vi phạm tiêu chuẩn",
-    banDuration: "15 ngày",
-    action: "Xem chi tiết",
-  },
-  {
-    id: 3,
-    name: "Bình nước tự động cho chó mèo",
-    time: "2025-03-22 09:15",
-    violationType: "Thông tin sai lệch về sản phẩm",
-    banDuration: "45 ngày",
-    action: "Xem chi tiết",
-  },
-  {
-    id: 4,
-    name: "Thức ăn hạt cho chim",
-    time: "2025-03-19 11:45",
-    violationType: "Không đủ giấy chứng nhận an toàn",
-    banDuration: "60 ngày",
-    action: "Xem chi tiết",
-  },
-];
+const violationProducts = [];

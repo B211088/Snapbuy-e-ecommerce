@@ -88,7 +88,7 @@ const ListUnpublistProducts = () => {
           style={{ height: "calc(100dvh - 350px)" }}
           className="w-full  flex flex-col gap-[10px] px-[10px] p-[10px] overflow-y-auto overflow-x-hidden scrollbar-custom"
         >
-          {listProducts ? (
+          {listProducts.length > 0 ? (
             listProducts
               .filter((item) => item.status === "UNPUBLIC")
               .map((item) => {
@@ -143,104 +143,4 @@ const ListUnpublistProducts = () => {
 
 export default ListUnpublistProducts;
 
-const listProducts = [
-  {
-    id: 1,
-    name: "Thức ăn cho chó",
-    price: 100000,
-    totalSales: 1000,
-    remaining: 123,
-    rating: 123,
-    status: "LIVE",
-  },
-  {
-    id: 2,
-    name: "Thức ăn cho mèo",
-    price: 90000,
-    totalSales: 800,
-    remaining: 50,
-    rating: 110,
-    status: "LIVE",
-  },
-  {
-    id: 3,
-    name: "Vòng cổ cho chó",
-    price: 50000,
-    totalSales: 600,
-    remaining: 75,
-    rating: 98,
-    status: "LIVE",
-  },
-  {
-    id: 4,
-    name: "Đồ chơi bóng cho mèo",
-    price: 30000,
-    totalSales: 700,
-    remaining: 60,
-    rating: 105,
-    status: "LIVE",
-  },
-  {
-    id: 5,
-    name: "Lồng vận chuyển cho chó mèo",
-    price: 250000,
-    totalSales: 350,
-    remaining: 20,
-    rating: 85,
-    status: "LIVE",
-  },
-  {
-    id: 6,
-    name: "Sữa tắm cho chó",
-    price: 120000,
-    totalSales: 450,
-    remaining: 40,
-    rating: 99,
-    status: "LIVE",
-  },
-  {
-    id: 7,
-    name: "Thức ăn hạt cho chim",
-    price: 45000,
-    totalSales: 200,
-    remaining: 80,
-    rating: 60,
-    status: "UNPUBLIC",
-  },
-  {
-    id: 8,
-    name: "Xương gặm cho chó",
-    price: 40000,
-    totalSales: 550,
-    remaining: 100,
-    rating: 97,
-    status: "VIOLATION",
-  },
-  {
-    id: 9,
-    name: "Cát vệ sinh cho mèo",
-    price: 75000,
-    totalSales: 900,
-    remaining: 130,
-    rating: 115,
-    status: "LIVE",
-  },
-  {
-    id: 10,
-    name: "Áo quần cho chó mèo",
-    price: 150000,
-    totalSales: 250,
-    remaining: 30,
-    rating: 80,
-    status: "REVIEWING",
-  },
-  {
-    id: 11,
-    name: "Bình nước tự động cho chó mèo",
-    price: 180000,
-    totalSales: 300,
-    remaining: 45,
-    rating: 92,
-    status: "REVIEWING",
-  },
-];
+const listProducts = [];

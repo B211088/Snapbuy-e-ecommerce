@@ -1,5 +1,6 @@
 import {
   SET_ALL_CATEGORIES,
+  SET_ALL_PRODUCTS,
   SET_ALL_SUB_CATEGORIES,
   SET_ALL_SUBCATEGORY_ATTRIBUTES,
 } from "../../contexts/contants";
@@ -56,6 +57,21 @@ export const subcategoryAttributeReducer = (state, action) => {
           return acc;
         }, {}),
         authLoading: true,
+      };
+
+    default:
+      return state;
+  }
+};
+
+export const productReducer = (state, action) => {
+  const { type, payload } = action;
+
+  switch (type) {
+    case SET_ALL_PRODUCTS:
+      return {
+        ...state,
+        products: payload,
       };
 
     default:

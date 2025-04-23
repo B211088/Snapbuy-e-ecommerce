@@ -4,15 +4,13 @@ import { getCroppedImg } from "../../utils/client/cropImage";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { useAuth } from "../../contexts/User/AuthContext";
 
-import { ToastContainer } from "react-toastify";
 import { useNotify } from "../Notify/NotifyModal";
 
-const UpdateImgModal = ({
-  onSuccess,
-  onCropped,
-  onUpload,
-  onCloseUpdateImgModal,
-}) => {
+const UpdateAvatarModal = ({ onCloseUpdateImgModal }) => {
+  const {
+    authState: { user },
+    uploadAvatar,
+  } = useAuth();
   const { notifySuccess, notifyWarning } = useNotify();
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -20,10 +18,6 @@ const UpdateImgModal = ({
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const { isDarkMode } = useTheme();
-  const {
-    uploadAvatar,
-    authState: { user },
-  } = useAuth();
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -33,7 +27,7 @@ const UpdateImgModal = ({
     }
   };
 
-  console.log(image);
+  console.log("croppedImage", croppedImage);
 
   const onCropComplete = useCallback(
     async (_, croppedAreaPixels) => {
@@ -43,9 +37,23 @@ const UpdateImgModal = ({
     [preview]
   );
 
-  const handleUpload = () => {
-    onCropped(croppedImage);
-    onUpload();
+  const handleUpload = async () => {
+    if (!croppedImage) {
+      notifyWarning("Vui lòng chọn ảnh cần cắt!");
+      return;
+    }
+    try {
+      const result = await uploadAvatar(user.id, croppedImage);
+      if (result.success) {
+        notifySuccess("Cập nhật ảnh đại điện thành công");
+        setCroppedImage(null);
+      } else {
+        notifyWarning(`Lỗi:  ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Lỗi khi upload ảnh:", error);
+      notifyWarning("Lỗi khi tải lên ảnh!");
+    }
   };
 
   return (
@@ -118,4 +126,4 @@ const UpdateImgModal = ({
   );
 };
 
-export default UpdateImgModal;
+export default UpdateAvatarModal;

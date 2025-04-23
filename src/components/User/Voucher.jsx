@@ -41,7 +41,7 @@ const Voucher = () => {
             </div>
           </div>
         </div>
-        <div className="w-full flex flex-wrap pr-[20px]  pb-[20px]">
+        <div className="w-full min-h-[500px] flex flex-wrap pr-[20px]  pb-[20px] overflow-y-auto">
           {vouchers.map((voucher, index) => (
             <div
               key={voucher.id}

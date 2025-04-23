@@ -5,7 +5,7 @@ import avt from "../../assets/images/sanpham3.jpg";
 import { useTheme } from "../../Provider/ThemeProvider";
 import { useAuth } from "../../contexts/User/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import ExtentionsUser from "../User/extentionsUser";
+import ExtentionsUser from "../User/ExtentionsUser";
 
 const User = () => {
   const { isDarkMode } = useTheme();
@@ -43,10 +43,10 @@ const User = () => {
   }, [statusModal]);
 
   return (
-    <div className="pc:ml-[20px] mb:px-[10px]">
+    <div className="pc:ml-[20px] mb:px-[10px] ">
       {isAuthenticated ? (
         <div
-          className="flex  items-center justify-end gap-[5px] cursor-pointer relative user-menu"
+          className="flex  items-center justify-endgap-[5px] cursor-pointer relative user-menu"
           onClick={handleChangStatusModalExtention}
         >
           <div className="font-nunito font-semibold text-[0.9rem]">
@@ -74,13 +74,13 @@ const User = () => {
           <div className="flex items-center pc:justify-end mb:justify-start mb:border-b-[1px] z-10">
             <Link
               to={`/register`}
-              className="mb:w-full h-[42px] flex items-center pc:justify-end mb:justify-center pl-[20px] font-nunito font-medium cursor-pointer"
+              className="mb:w-full h-[42px] truncate flex items-center pc:justify-end mb:justify-center pl-[20px] font-nunito font-medium cursor-pointer"
             >
               Đăng ký
             </Link>
             <Link
               to={`/login`}
-              className="mb:w-full h-[42px] flex items-center pc:justify-end mb:justify-center pl-[20px] font-nunito font-bold text-primary cursor-pointer"
+              className="mb:w-full h-[42px] truncate flex items-center pc:justify-end mb:justify-center pl-[20px] font-nunito font-bold text-primary cursor-pointer"
             >
               Đăng nhập
             </Link>

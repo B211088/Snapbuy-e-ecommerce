@@ -4,7 +4,7 @@ const LayoutModeBackground = ({ children }) => {
   const { isDarkMode } = useTheme();
   return (
     <div
-      className={`flex flex-col items-center justify-center   ${
+      className={`w-full flex flex-col justify-center items-center pc:px-[20px] px-[10px] ${
         isDarkMode ? "bg-background" : "bg-[#515151]"
       }`}
     >

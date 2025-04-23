@@ -1,22 +1,24 @@
-import React, { useEffect } from "react";
-import OutLetContainer from "../../../views/client/layout/OutLetContainer";
+import { useCallback, useEffect } from "react";
 import { useTheme } from "../../../Provider/ThemeProvider";
-import { Link, Outlet } from "react-router-dom";
 import ContainerModeLayer1 from "../../Container/ContainerModeLayer1";
 import { useState } from "react";
 import { useNotify } from "../../Notify/NotifyModal";
-import InputField from "../../Modal/InputField";
 import GetCategory from "../Modal/GetCategory";
 import { useAppData } from "../../../contexts/client/AppDataContext";
 import { useShop } from "../../../contexts/User/ShopContext";
+import { debounce } from "lodash";
 
 const AddProduct = () => {
   const { isDarkMode } = useTheme();
   const {
-    shopState: { shopInfo, products },
+    shopState: { shopInfo },
     createProduct,
     addMultipleAttributes,
-    addInfoProductsSeller,
+    addInfoProductsSellerLv1,
+    addInfoProductsSellerLv2,
+    getShipingType,
+    caculateShipingFee,
+    addProductShippingInfo,
   } = useShop();
   const { getAllSubcategoryAttributes } = useAppData();
   const { notifySuccess, notifyError, notifyWarning } = useNotify();
@@ -31,17 +33,204 @@ const AddProduct = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shopId, setShopId] = useState(null);
   const [attributeProduct, setAttributeProduct] = useState([]);
+  const [imagesOption, setImagesOption] = useState({});
+  const [imagesOptionPreview, setImagesOptionPreview] = useState({});
+  const [shippingType, setShippingType] = useState([]);
+  const [shippingFee, setShippingFee] = useState();
+  const [toggleButtonShiping, setToggleButtonShiping] = useState({});
+  const [categories, setCategories] = useState([
+    { product_category_group_name: "", options: [""], error: "" },
+  ]);
+
+  const [tableData, setTableData] = useState([]);
   const [infoProduct, setInfoProduct] = useState({
     name: "",
     description: "",
     subcategoryId: "",
   });
 
+  const [shippingWeigth, setShippingWeigth] = useState("");
+  const [shippingSize, setShipingSize] = useState({
+    width: "",
+    height: "",
+    high: "",
+  });
+
+  const [shipingTypeId, setShippingTypeId] = useState([]);
+
+  const toggleButtonShippingChange = (type) => {
+    if (loading) {
+      return;
+    }
+    setToggleButtonShiping((prev) => ({
+      ...prev,
+      [type.id]: !prev[type.id],
+    }));
+    setShippingTypeId((prev) => {
+      if (prev.includes(type.id)) {
+        return prev.filter((id) => id !== type.id);
+      } else {
+        return [...prev, type.id];
+      }
+    });
+  };
+
   useEffect(() => {
     if (shopInfo?.id) {
       setShopId(shopInfo.id);
     }
   }, [shopInfo]);
+
+  const handleChangeShippingWeigth = (e) => {
+    const { value } = e.target;
+
+    // Chỉ cho phép nhập số hoặc để trống
+    if (/^\d*$/.test(value)) {
+      setShippingWeigth(value); // Lưu dưới dạng chuỗi
+    }
+  };
+
+  const handleChangeShippingSize = (e) => {
+    const { name, value } = e.target;
+
+    // Chỉ cho phép nhập số hoặc để trống
+    if (/^\d*$/.test(value)) {
+      setShipingSize((prev) => ({
+        ...prev,
+        [name]: value, // Lưu dưới dạng chuỗi
+      }));
+    }
+  };
+
+  useEffect(() => {
+    const fetchShipingType = async () => {
+      try {
+        const response = await getShipingType();
+        if (response.success) {
+          const shipingWithDefault = response.data.map((type) => ({
+            ...type,
+            priceAfterCaculate: 0,
+          }));
+          setShippingType(shipingWithDefault);
+          return;
+        }
+
+        return;
+      } catch (error) {
+        notifyError("Lỗi khi lấy phân loại vận chuyển" + error.message);
+      }
+    };
+
+    fetchShipingType();
+  }, []);
+
+  const fecthcaculateShipingFee = async () => {
+    try {
+      const formData = {
+        weight: Number(shippingWeigth / 1000),
+        height: Number(shippingSize.height),
+        width: Number(shippingSize.width),
+        high: Number(shippingSize.high),
+      };
+      const response = await caculateShipingFee(formData);
+      if (response.success) {
+        setShippingFee(response.data);
+      }
+    } catch (error) {
+      notifyError("Không thể tính toán phí vận chuyển:" + error.message);
+    }
+  };
+
+  const debouncedFetchShippingFee = useCallback(
+    debounce(() => {
+      fecthcaculateShipingFee();
+    }, 1000),
+    [shippingSize, shippingWeigth]
+  );
+
+  useEffect(() => {
+    if (
+      Number(shippingWeigth) > 0 &&
+      Number(shippingSize.width) > 0 &&
+      Number(shippingSize.height) > 0 &&
+      Number(shippingSize.high) > 0
+    ) {
+      debouncedFetchShippingFee();
+    } else if (
+      Number(shippingWeigth) > 0 ||
+      (Number(shippingSize.width) > 0 &&
+        Number(shippingSize.height) > 0 &&
+        Number(shippingSize.high) > 0)
+    ) {
+      const resetShipingType = shippingType.map((type) => ({
+        ...type,
+        priceAfterCaculate: 0,
+      }));
+      setShippingType(resetShipingType);
+    }
+  }, [
+    shippingWeigth,
+    shippingSize.width,
+    shippingSize.height,
+    shippingSize.high,
+  ]);
+
+  useEffect(() => {
+    if (Array.isArray(shippingFee) && shippingFee.length > 0) {
+      const newShipingType = shippingFee.map((item) => {
+        const { shipping_type_response, price } = item;
+        return {
+          id: shipping_type_response.id,
+          name: shipping_type_response.name,
+          description: shipping_type_response.description,
+          price: shipping_type_response.price,
+          priceAfterCaculate: Math.round(price),
+          estimated_time: shipping_type_response.estimated_time,
+        };
+      });
+      setShippingType(newShipingType);
+    }
+  }, [shippingFee]);
+
+  const handleAddProductShippingInfo = async (productId) => {
+    try {
+      const formData = {
+        shop_id: shopId,
+        product_id: productId,
+        weight: Number(shippingWeigth) / 1000,
+        height: Number(shippingSize.height),
+        width: Number(shippingSize.width),
+        high: Number(shippingSize.high),
+        shipping_type_ids: shipingTypeId,
+      };
+
+      const response = await addProductShippingInfo(formData);
+
+      if (response.success) {
+        setShippingWeigth("");
+        setShipingSize({
+          width: "",
+          height: "",
+          high: "",
+        });
+        setShippingFee([]);
+        setShippingType((prev) =>
+          prev.map((type) => ({
+            ...type,
+            priceAfterCaculate: 0,
+          }))
+        );
+        setShippingTypeId([]);
+        setToggleButtonShiping({});
+
+        return { success: true };
+      }
+
+      return { success: false, message: response.message };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  };
 
   const handleAttributeChange = (subcategory_attribute_id, value) => {
     setAttributeProduct((prev) => {
@@ -80,7 +269,7 @@ const AddProduct = () => {
     }
   };
 
-  const cropImage = async (imageFile) => {
+  const cropImage = async (imageFile, ratioConfig) => {
     return new Promise((resolve) => {
       const img = new Image();
       img.src = URL.createObjectURL(imageFile);
@@ -94,7 +283,7 @@ const AddProduct = () => {
           cropWidth = imgW,
           cropHeight = imgH;
 
-        if (ratio === "1x1") {
+        if (ratioConfig === "1x1") {
           const size = Math.min(imgW, imgH);
           cropX = (imgW - size) / 2;
           cropY = (imgH - size) / 2;
@@ -102,7 +291,7 @@ const AddProduct = () => {
           cropHeight = size;
           canvas.width = size;
           canvas.height = size;
-        } else if (ratio === "3x4") {
+        } else if (ratioConfig === "3x4") {
           if (imgW / imgH > 3 / 4) {
             cropHeight = imgH;
             cropWidth = (imgH * 3) / 4;
@@ -141,15 +330,7 @@ const AddProduct = () => {
         attributeProduct
       );
       if (response.success) {
-        notifySuccess("Sản phẩm đã được thêm thành công!");
-        setInfoProduct({ name: "", description: "", subcategoryId: "" });
-        setImagesProduct([]);
-        setImagesProductPreview([]);
-        setImageThumbnail(null);
-        setImageThumbnailPreview(null);
-        setSelectedCategory("");
-        setSubcategoryAttributes([]);
-        setLoading(false);
+        return { success: true };
       } else {
         notifyError("Thêm thuộc tính thất bại!");
       }
@@ -158,56 +339,7 @@ const AddProduct = () => {
     }
   };
 
-  const handleCreateProduct = async () => {
-    setLoading(true);
-    if (
-      !infoProduct.name ||
-      !infoProduct.description ||
-      !infoProduct.subcategoryId
-    ) {
-      notifyWarning("Vui lòng nhập đầy đủ thông tin!");
-      setLoading(false);
-      return;
-    }
-
-    if (!imageThumbnail) {
-      notifyWarning("Vui lòng chọn ảnh bìa sản phẩm!");
-      setLoading(false);
-      return;
-    }
-
-    if (imagesProduct.length === 0) {
-      notifyWarning("Vui lòng chọn ít nhất một ảnh sản phẩm!");
-      setLoading(false);
-      return;
-    }
-
-    const formData = new FormData();
-    Object.keys(infoProduct).forEach((key) => {
-      formData.append(key, infoProduct[key]);
-    });
-
-    const croppedThumbnail = await cropImage(imageThumbnail, ratio);
-    formData.append("thumbnail", croppedThumbnail, "thumbnail.jpg");
-
-    for (let i = 0; i < imagesProduct.length; i++) {
-      const croppedImage = await cropImage(imagesProduct[i].file, ratio);
-      formData.append("productImages", croppedImage, `product_${i + 1}.jpg`);
-    }
-
-    try {
-      const response = await createProduct(shopId, formData);
-      if (response) {
-        handleAddAttribute(response.data.product_id);
-      }
-      setLoading(false);
-    } catch (error) {
-      notifyError("Lỗi khi thêm sản phẩm! Vui lòng thử lại.");
-      setLoading(false);
-    }
-  };
-
-  const handleSelect = (item, type) => {
+  const handleSelect = (item) => {
     setInfoProduct({ ...infoProduct, subcategoryId: item.id });
     setSelectedCategory(item);
     setIsModalOpen(false);
@@ -263,181 +395,457 @@ const AddProduct = () => {
     const { name, value } = event.target;
     setInfoProduct((prev) => ({ ...prev, [name]: value }));
   };
-  const [categories, setCategories] = useState([
-    { product_category_group_name: "", options: [""], error: "" },
-  ]);
-  const [tableData, setTableData] = useState([]);
 
-  const sendProductCategory = async () => {
-    const formData = new FormData();
+  const handleAddInfoProductsSellerLv1 = async (productId) => {
+    const form = new FormData();
 
-    const productCategoryRequest = {
-      productId: 1,
-      shopId: shopId,
-      product_category_groups: categories.map((category) => ({
-        product_category_group_name: category.product_category_group_name,
-        product_categories: tableData.map(
-          ({ first_category, second_category, quantity }) => ({
-            first_category,
-            second_category,
-            quantity: Number(quantity),
-          })
-        ),
-      })),
-    };
-
-    formData.append(
-      "productCategoryRequest",
-      JSON.stringify(productCategoryRequest)
-    );
-
-    try {
-      const response = await addInfoProductsSeller(formData);
-
-      if (!response.ok) {
-        throw new Error("Lỗi khi gửi dữ liệu");
-      }
-
-      const result = await response.json();
-      console.log("Kết quả:", result);
-    } catch (error) {
-      console.error("Lỗi:", error);
-    }
-  };
-
-  const productCategoryRequest = {
-    productId: 1,
-    shopId: 1,
-    product_category_groups: categories.map((category) => ({
-      product_category_group_name: category.product_category_group_name,
+    const productCategoryRequestLv1 = {
+      product_category_group_name:
+        categories[0]?.product_category_group_name || "",
       product_categories: tableData.map(
-        ({ first_category, second_category, quantity, price }) => ({
-          first_category,
-          second_category,
-          price,
+        ({ first_category, quantity, price }) => ({
+          value: first_category,
+          price: parseInt(price),
           quantity: Number(quantity),
         })
       ),
-    })),
-  };
+    };
 
-  console.log("productCategoryRequest ", productCategoryRequest);
-
-  const handleCategoryChange = (index, value) => {
-    const newCategories = [...categories];
-    newCategories[index].product_category_group_name = value;
-
-    const duplicate = newCategories.some(
-      (cat, i) =>
-        cat.product_category_group_name === value && i !== index && value !== ""
+    form.append(
+      "productCategoryRequest",
+      new Blob([JSON.stringify(productCategoryRequestLv1)], {
+        type: "application/json",
+      })
     );
 
-    newCategories[index].error = duplicate
-      ? "Các phân loại hàng phải khác nhau"
-      : "";
+    const filesArray = Object.values(imagesOption);
 
-    setCategories(newCategories);
-    generateTable(newCategories);
+    for (let i = 0; i < filesArray.length; i++) {
+      form.append("files", filesArray[i].file, `option_${i + 1}.jpg`);
+    }
+
+    try {
+      const response = await addInfoProductsSellerLv1(productId, shopId, form);
+
+      if (response.success) {
+        return { success: true };
+      }
+
+      notifyWarning("Thêm thông tin bán hàng không thành công");
+      return { success: false };
+    } catch (error) {
+      notifyError("Lỗi khi thêm thông tin bán hàng: " + error.message);
+    }
+  };
+
+  const handleAddInfoProductsSellerLv2 = async (productId) => {
+    const form = new FormData();
+    const productCategoryRequestLv2 = {
+      product_category_group:
+        categories[0]?.product_category_group_name?.toLowerCase() || "",
+      sub_product_category_group:
+        categories[1]?.product_category_group_name?.toLowerCase() || "",
+      product_category_two_level: categories[0]?.options
+        .map((option) => {
+          const rows = tableData.filter((row) => row.first_category === option);
+
+          if (rows.length === 0) return null;
+
+          return {
+            parent_product_category: option,
+            child_product_categories: rows.map((row) => ({
+              name: row.second_category,
+              quantity: Number(row.quantity),
+              price: parseInt(row.price),
+            })),
+          };
+        })
+        .filter(Boolean),
+    };
+
+    form.append(
+      "multipleProductCategoryDTO",
+      new Blob([JSON.stringify(productCategoryRequestLv2)], {
+        type: "application/json",
+      })
+    );
+
+    const filesArray = Object.values(imagesOption);
+
+    for (let i = 0; i < filesArray.length; i++) {
+      const croppedImageOption = await cropImage(filesArray[i].file, "1x1");
+      form.append("files", croppedImageOption, `option_${i + 1}.jpg`);
+    }
+
+    try {
+      const response = await addInfoProductsSellerLv2(productId, shopId, form);
+      if (response.success) {
+        return { success: true };
+      }
+      notifyWarning("Thêm thông tin bán hàng không thành công");
+      return { success: false };
+    } catch (error) {
+      notifyError("Lỗi khi thêm thông tin bán hàng: " + error.message);
+    }
+  };
+
+  const handleCreateProduct = async () => {
+    // Validation checks
+    const validationErrors = [];
+
+    if (!infoProduct.name.trim()) {
+      validationErrors.push("Tên sản phẩm không được để trống");
+    }
+
+    if (!infoProduct.description.trim()) {
+      validationErrors.push("Mô tả sản phẩm không được để trống");
+    }
+
+    if (!infoProduct.subcategoryId) {
+      validationErrors.push("Bạn chưa chọn ngành hàng");
+    }
+
+    // Image validation
+    if (!imageThumbnail) {
+      validationErrors.push("Vui lòng chọn ảnh bìa sản phẩm");
+    }
+
+    if (imagesProduct.length === 0) {
+      validationErrors.push("Vui lòng chọn ít nhất một ảnh sản phẩm");
+    }
+
+    // Category and options validation
+    if (categories.length === 0 || !categories[0].product_category_group_name) {
+      validationErrors.push("Vui lòng nhập tên phân loại");
+    }
+
+    const hasCategoryError = categories.some((cat) => cat.error);
+    if (hasCategoryError) {
+      validationErrors.push("Vui lòng sửa lỗi trong phân loại hàng");
+    }
+
+    // Table data validation
+    if (tableData.length > 0) {
+      const isInvalid = tableData.some(
+        ({ price, quantity }) =>
+          !price ||
+          !quantity ||
+          isNaN(Number(price)) ||
+          isNaN(Number(quantity)) ||
+          Number(price) <= 0 ||
+          Number(quantity) <= 0
+      );
+
+      if (isInvalid) {
+        validationErrors.push(
+          "Vui lòng nhập đầy đủ giá và số lượng hợp lệ cho tất cả danh mục"
+        );
+      }
+    } else if (
+      categories.some((cat) => cat.options.some((opt) => opt.trim() !== ""))
+    ) {
+      validationErrors.push("Bảng phân loại sản phẩm chưa được tạo");
+    }
+
+    // Shipping validation
+    if (!shippingWeigth || Number(shippingWeigth) <= 0) {
+      validationErrors.push("Vui lòng nhập cân nặng sản phẩm");
+    }
+
+    if (
+      !shippingSize.width ||
+      !shippingSize.height ||
+      !shippingSize.high ||
+      Number(shippingSize.width) <= 0 ||
+      Number(shippingSize.height) <= 0 ||
+      Number(shippingSize.high) <= 0
+    ) {
+      validationErrors.push("Vui lòng nhập đầy đủ kích thước đóng gói");
+    }
+
+    if (shipingTypeId.length === 0) {
+      validationErrors.push("Vui lòng chọn ít nhất một loại vận chuyển");
+    }
+
+    // Display validation errors if any
+    if (validationErrors.length > 0) {
+      notifyWarning(validationErrors[0]); // Show first error
+      return;
+    }
+
+    // Set loading state to disable form
+    setLoading(true);
+
+    // Create product
+    const formData = new FormData();
+    Object.keys(infoProduct).forEach((key) => {
+      formData.append(key, infoProduct[key]);
+    });
+
+    try {
+      // Process images
+      const croppedThumbnail = await cropImage(imageThumbnail, ratio);
+      formData.append("thumbnail", croppedThumbnail, "thumbnail.jpg");
+
+      for (let i = 0; i < imagesProduct.length; i++) {
+        const croppedImage = await cropImage(imagesProduct[i].file, ratio);
+        formData.append("productImages", croppedImage, `product_${i + 1}.jpg`);
+      }
+
+      // Create product
+      const response = await createProduct(shopId, formData);
+      if (!response.success) {
+        notifyError("Tạo sản phẩm thất bại: " + response.message);
+        setLoading(false);
+        return;
+      }
+
+      const productId = response.data.product_id;
+
+      // Add attributes
+      await handleAddAttribute(productId);
+
+      // Add sales information based on category count
+      let salesInfoSuccess = false;
+      if (categories.length === 1) {
+        const responseInfoSeller = await handleAddInfoProductsSellerLv1(
+          productId
+        );
+        salesInfoSuccess = responseInfoSeller.success;
+      } else {
+        const responseInfoSeller = await handleAddInfoProductsSellerLv2(
+          productId
+        );
+        salesInfoSuccess = responseInfoSeller.success;
+      }
+
+      if (salesInfoSuccess) {
+        notifySuccess("Thêm thông tin bán hàng thành công");
+      } else {
+        notifyWarning("Thêm thông tin bán hàng không thành công");
+      }
+
+      // Add shipping information
+      const responseInfoShiping = await handleAddProductShippingInfo(productId);
+      if (responseInfoShiping.success) {
+        notifySuccess("Thêm thông tin vận chuyển thành công");
+      } else {
+        notifyWarning("Thêm thông tin vận chuyển không thành công");
+      }
+
+      // Final success notification
+      notifySuccess("Tạo sản phẩm thành công!");
+
+      // Reset form data
+      resetFormData();
+    } catch (error) {
+      notifyError(error.message || "Đã xảy ra lỗi khi tạo sản phẩm");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add a reset form function to clean up after successful product creation
+  const resetFormData = () => {
+    setInfoProduct({ name: "", description: "", subcategoryId: "" });
+    setImagesProduct([]);
+    setImagesProductPreview([]);
+    setImageThumbnail(null);
+    setImageThumbnailPreview(null);
+    setSelectedCategory(null);
+    setSubcategoryAttributes([]);
+    setAttributeProduct([]);
+    setCategories([
+      { product_category_group_name: "", options: [""], error: "" },
+    ]);
+    setTableData([]);
+    setImagesOption({});
+    setImagesOptionPreview({});
+    setShippingWeigth("");
+    setShipingSize({
+      width: "",
+      height: "",
+      high: "",
+    });
+    setShippingFee([]);
+    setShippingType((prev) =>
+      prev.map((type) => ({
+        ...type,
+        priceAfterCaculate: 0,
+      }))
+    );
+    setShippingTypeId([]);
+    setToggleButtonShiping({});
+  };
+
+  const handleCategoryChange = (index, value) => {
+    setCategories((prevCategories) => {
+      const newCategories = [...prevCategories];
+      newCategories[index].product_category_group_name = value;
+
+      const duplicate = newCategories.some(
+        (cat, i) =>
+          cat.product_category_group_name === value &&
+          i !== index &&
+          value !== ""
+      );
+
+      newCategories[index].error = duplicate
+        ? "Các phân loại hàng phải khác nhau"
+        : "";
+
+      return newCategories;
+    });
+
+    generateTable();
   };
 
   const handleAddCategory = () => {
-    if (categories.length < 2) {
-      setCategories([
-        ...categories,
-        { product_category_group_name: "", options: [""], error: "" },
-      ]);
-    }
+    setCategories((prevCategories) => {
+      if (prevCategories.length < 2) {
+        return [
+          ...prevCategories,
+          { product_category_group_name: "", options: [""], error: "" },
+        ];
+      }
+      return prevCategories;
+    });
+
+    generateTable();
   };
 
   const handleOptionChange = (catIndex, optIndex, value) => {
-    const newCategories = [...categories];
-    newCategories[catIndex].options[optIndex] = value;
+    setCategories((prevCategories) => {
+      const newCategories = [...prevCategories];
+      const options = newCategories[catIndex].options;
 
-    const isDuplicate = newCategories[catIndex].options.some(
-      (opt, i) => opt === value && i !== optIndex && value !== ""
-    );
+      const isDuplicate = options.some(
+        (opt, i) => opt === value && i !== optIndex && value !== ""
+      );
 
-    newCategories[catIndex].error = isDuplicate
-      ? "Các phân loại hàng phải khác nhau"
-      : "";
+      if (isDuplicate) {
+        newCategories[catIndex].error = "Tùy chọn không được trùng!";
+      } else {
+        newCategories[catIndex].error = "";
+        newCategories[catIndex].options[optIndex] = value;
+      }
 
-    setCategories(newCategories);
-    generateTable(newCategories);
+      return newCategories;
+    });
+
+    generateTable();
   };
-
   const handleAddOption = (catIndex) => {
-    const newCategories = [...categories];
-    newCategories[catIndex].options.push("");
-    setCategories(newCategories);
-    generateTable(newCategories);
+    setCategories((prevCategories) => {
+      const newCategories = [...prevCategories];
+      newCategories[catIndex].options = [
+        ...newCategories[catIndex].options,
+        "",
+      ];
+      return newCategories;
+    });
+
+    generateTable();
   };
 
   const handleRemoveOption = (catIndex, optIndex) => {
-    const newCategories = [...categories];
-    newCategories[catIndex].options.splice(optIndex, 1);
-    setCategories(newCategories);
-    generateTable(newCategories);
+    setCategories((prevCategories) => {
+      const newCategories = [...prevCategories];
+
+      if (newCategories[catIndex].options.length > 1) {
+        newCategories[catIndex].options = newCategories[
+          catIndex
+        ].options.filter((_, i) => i !== optIndex);
+      }
+
+      return newCategories;
+    });
+
+    generateTable();
   };
+  const generateTable = () => {
+    setCategories((newCategories) => {
+      if (!newCategories[0]?.product_category_group_name) return newCategories;
 
-  const generateTable = (newCategories) => {
-    if (!newCategories[0]?.product_category_group_name) return;
+      const category1 = newCategories[0];
+      const category2 = newCategories[1] || null;
 
-    const category1 = newCategories[0];
-    const category2 = newCategories[1] || null;
-    const rows = [];
+      const category1Options = category1.options.filter(
+        (opt) => opt.trim() !== ""
+      );
+      const category2Options = category2
+        ? category2.options.filter((opt) => opt.trim() !== "")
+        : [];
 
-    category1.options.forEach((opt1) => {
-      if (category2) {
-        category2.options.forEach((opt2) => {
+      if (category1Options.length === 0) {
+        setTableData([]);
+        return newCategories;
+      }
+
+      const rows = [];
+
+      category1Options.forEach((opt1) => {
+        if (category2 && category2Options.length > 0) {
+          category2Options.forEach((opt2) => {
+            rows.push({
+              first_category: opt1,
+              second_category: opt2,
+              price: "",
+              quantity: "",
+            });
+          });
+        } else {
           rows.push({
             first_category: opt1,
-            second_category: opt2,
+            second_category: null,
             price: "",
             quantity: "",
           });
-        });
-      } else {
-        rows.push({
-          first_category: opt1,
-          second_category: null,
-          price: "",
-          quantity: "",
-        });
-      }
-    });
+        }
+      });
 
-    setTableData(rows);
+      setTableData(rows);
+      return newCategories;
+    });
   };
 
   const handlePriceChange = (index, value) => {
-    const updatedTable = [...tableData];
-    updatedTable[index].price = value;
-    setTableData(updatedTable);
+    const numericValue = Number(value.replace(/\./g, ""));
+    setTableData((prevTable) => {
+      const updatedTable = [...prevTable];
+      updatedTable[index].price = numericValue;
+      return updatedTable;
+    });
   };
 
   const handleQuantityChange = (index, value) => {
-    const updatedTable = [...tableData];
-    updatedTable[index].quantity = value;
-    setTableData(updatedTable);
+    setTableData((prevTable) => {
+      const updatedTable = [...prevTable];
+      updatedTable[index].quantity = value;
+      return updatedTable;
+    });
   };
 
-  const [imagesOption, setImagesOption] = useState({});
-  const [imagesOptionPreview, setImagesOptionPreview] = useState({});
-  console.log("imagesOption", imagesOption);
-  console.log("imagesOptionPreview", imagesOptionPreview);
-
   const handleImageChange = (event, category) => {
+    if (loading) return;
     const file = event.target.files[0];
-    if (file) {
-      setImagesOptionPreview((prev) => ({
-        ...prev,
-        [category]: URL.createObjectURL(file),
-      }));
-      setImagesOption((prev) => ({
-        ...prev,
-        [category]: file,
-      }));
-    }
+    if (!file) return;
+
+    const newImage = {
+      id: crypto.randomUUID(),
+      file,
+      src: URL.createObjectURL(file),
+    };
+
+    setImagesOptionPreview((prev) => ({
+      ...prev,
+      [category]: newImage.src,
+    }));
+
+    setImagesOption((prev) => ({
+      ...prev,
+      [category]: newImage,
+    }));
   };
 
   const handleRemoveImageOption = (category) => {
@@ -452,13 +860,33 @@ const AddProduct = () => {
       return newImages;
     });
   };
+
+  const handleRemoveCategory = (catIndex) => {
+    setCategories((prevCategories) => {
+      const newCategories = prevCategories.filter(
+        (_, index) => index !== catIndex
+      );
+
+      if (newCategories.length < 2) {
+        setTableData([]);
+      }
+
+      return newCategories;
+    });
+  };
+
+  useEffect(() => {
+    if (categories.length > 0) {
+      generateTable(categories);
+    }
+  }, [categories]);
   return (
     <div className="w-full flex flex-col">
       <ContainerModeLayer1>
         <div className="w-full flex flex-col  px-[20px] py-[12px] border-b-[1px] border-dashed ">
           <div className="flex items-center  font-nunito gap-[10px] pb-[10px]">
             <div
-              className={`w-[50px] h-[50px] min-w-[50px] flex items-center justify-center rounded-full border-[1px] text-[1.4rem] ${
+              className={`w-[50px] h-[50px] min-w-[50px] flex items-center justify-center rounded-full border-[1px] text-[1.4rem] z-10 ${
                 isDarkMode ? "text-dark-300" : "text-light-300"
               }`}
             >
@@ -477,15 +905,16 @@ const AddProduct = () => {
           </div>
         </div>
         <div className="w-full flex flex-col">
-          <div className="w-full  flex items-center gap-[10px] px-[20px] py-[20px]">
-            <div className="w-2/12 flex items-center font-nunito text-[0.9rem] ">
+          <div className="w-full  flex mb:flex-col items-center gap-[10px] px-[20px] py-[20px]">
+            <div className="pc:w-2/12 w-full flex items-center font-nunito text-[0.9rem] ">
               <span>Hình ảnh sản phẩm</span>
             </div>
-            <div className="w-10/12 ">
+            <div className="pc:w-10/12  w-full ">
               <div className="flex gap-4 mb-3 font-nunito pb-[20px]">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <span className="text-[0.85rem] ">Hình ảnh tỷ lệ 1x1</span>
                   <input
+                    disabled={loading}
                     type="radio"
                     name="ratio"
                     value="1x1"
@@ -505,6 +934,7 @@ const AddProduct = () => {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <span className="text-[0.85rem] ">Hình ảnh tỷ lệ 3x4</span>
                   <input
+                    disabled={loading}
                     type="radio"
                     name="ratio"
                     value="3x4"
@@ -537,12 +967,17 @@ const AddProduct = () => {
                       alt="Uploaded"
                       className="w-full h-full object-cover"
                     />
-                    <div
-                      className="absolute group-hover:flex  hidden items-center justify-center top-[5%] right-[5%] px-[8px] py-[8px] rounded-full bg-dark-200 cursor-pointer"
+                    <button
+                      disabled={loading}
+                      className={`absolute group-hover:flex  hidden items-center justify-center top-[5%] right-[5%] px-[8px] py-[8px] rounded-full cursor-pointer ${
+                        isDarkMode
+                          ? "bg-light-200 text-dark-100"
+                          : "bg-dark-400 text-light-100"
+                      }`}
                       onClick={() => handleRemoveImageProduct(img.id)}
                     >
                       <i className="fa-solid fa-trash"></i>
-                    </div>
+                    </button>
                   </div>
                 ))}
 
@@ -560,6 +995,7 @@ const AddProduct = () => {
                         Thêm hình ảnh {imagesProduct.length}/5
                       </span>
                       <input
+                        disabled={loading}
                         type="file"
                         accept="image/*"
                         className="hidden"
@@ -570,11 +1006,11 @@ const AddProduct = () => {
               </div>
             </div>
           </div>
-          <div className="w-full  flex items-center  gap-[10px]  px-[20px] py-[20px]">
-            <div className="w-2/12 flex items-center font-nunito text-[0.9rem] ">
+          <div className="w-full  flex mb:flex-col items-center  gap-[10px]  px-[20px] py-[20px]">
+            <div className="pc:w-2/12 w-full flex items-center font-nunito text-[0.9rem] ">
               <span>Thêm Ảnh bìa</span>
             </div>
-            <div className="w-10/12 flex items-center gap-4 ">
+            <div className="pc:w-10/12  w-full flex mb:flex-col items-center gap-4 ">
               {imageThumbnailPreview ? (
                 imageThumbnailPreview && (
                   <div className="w-[100px] h-[100px] aspect-square rounded-[5px] relative group">
@@ -583,29 +1019,37 @@ const AddProduct = () => {
                       alt="Uploaded"
                       className="w-full  h-full aspect-square rounded-[5px] object-cover"
                     />
-                    <div
-                      className="absolute group-hover:flex  hidden items-center justify-center top-[5%] right-[5%] px-[8px] py-[8px] rounded-full bg-dark-200 cursor-pointer"
+                    <buton
+                      disabled={loading}
+                      className={`absolute group-hover:flex  hidden items-center justify-center top-[5%] right-[5%] px-[8px] py-[8px] rounded-full cursor-pointer ${
+                        isDarkMode
+                          ? "bg-light-200 text-dark-100"
+                          : "bg-dark-400 text-light-100"
+                      }`}
                       onClick={handleRemoveImageThumbnail}
                     >
                       <i className="fa-solid fa-trash"></i>
-                    </div>
+                    </buton>
                   </div>
                 )
               ) : (
-                <label
-                  className={`flex flex-col w-[100px] h-[100px] aspect-square items-center justify-center border border-dashed rounded-lg cursor-pointer text-gray-600`}
-                >
-                  <i className="fa-solid fa-image text-2xl"></i>
-                  <span className="text-[0.7rem] text-center">
-                    Thêm hình ảnh
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageThumbnailChange}
-                  />
-                </label>
+                <div className="w-full">
+                  <label
+                    className={`flex flex-col w-[100px] h-[100px] aspect-square items-center justify-center border border-dashed rounded-lg cursor-pointer text-gray-600`}
+                  >
+                    <i className="fa-solid fa-image text-2xl"></i>
+                    <span className="text-[0.7rem] text-center">
+                      Thêm hình ảnh
+                    </span>
+                    <input
+                      disabled={loading}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageThumbnailChange}
+                    />
+                  </label>
+                </div>
               )}
 
               <div className="font-nunito text-[0.8rem]">
@@ -615,11 +1059,11 @@ const AddProduct = () => {
               </div>
             </div>
           </div>
-          <div className="w-full  flex items-center  gap-[10px]  px-[20px] py-[20px]">
-            <div className="w-2/12 flex items-center font-nunito text-[0.9rem] ">
+          <div className="w-full  flex mb:flex-col items-center  gap-[10px]  px-[20px] py-[20px]">
+            <div className="pc:w-2/12  w-full  flex items-center font-nunito text-[0.9rem] ">
               <span>Tên sản phẩm</span>
             </div>
-            <div className="w-10/12 flex items-center  gap-[10px]   ">
+            <div className="pc:w-10/12  w-full  flex items-center  gap-[10px]   ">
               <div
                 className={`w-full h-[42px] flex items-center gap-[5px] pr-[5px] rounded-[5px] ${
                   isDarkMode ? "border-[1px]" : "bg-dark-400 "
@@ -628,6 +1072,7 @@ const AddProduct = () => {
                 <input
                   className="w-full bg-transparent outline-none text-[0.8rem] px-[10px] "
                   type="text"
+                  disabled={loading}
                   value={infoProduct.name}
                   maxLength={100}
                   name="name"
@@ -640,43 +1085,47 @@ const AddProduct = () => {
               </div>
             </div>
           </div>
-          <div className="w-full flex gap-[10px] px-[20px] py-[20px]">
-            <div className="w-2/12 flex  font-nunito text-[0.9rem] ">
+          <div className="w-full flex mb:flex-col gap-[10px] px-[20px] py-[20px]">
+            <div className="pc:w-2/12  w-full flex  font-nunito text-[0.9rem] ">
               <span>Mô tả sản phẩm</span>
             </div>
-            <div className="w-10/12 flex items-center  gap-[10px] ">
+            <div className="pc:w-10/12 w-full flex items-center  gap-[10px] ">
               <div
-                className={`w-full h-[122px] flex  gap-[5px] pr-[5px] rounded-[5px] ${
+                className={`w-full h-[290px] flex  gap-[5px] pr-[5px] rounded-[5px] ${
                   isDarkMode ? "border-[1px]" : "bg-dark-400 "
                 }`}
               >
                 <textarea
-                  className="w-full h-full bg-transparent outline-none text-[0.8rem] p-[10px]"
+                  disabled={loading}
+                  className="w-full h-full min-h-full max-h-full  bg-transparent outline-none text-[0.8rem] p-[10px]"
                   type="text"
                   value={infoProduct.description}
-                  maxLength={400}
+                  maxLength={2000}
                   name="description"
                   placeholder="Nhập mô tả sản phẩm"
                   onChange={handleInfoChange}
                 />
                 <div className="text-[0.8rem] w-[50px] flex justify-end py-[10px]">
-                  <span> {infoProduct.description.length}/400</span>
+                  <span> {infoProduct.description.length}/2000</span>
                 </div>
               </div>
             </div>
-          </div>{" "}
-          <div className="w-full  flex items-center gap-[10px] px-[20px] py-[20px]">
-            <div className="w-2/12 flex items-center font-nunito text-[0.9rem] ">
+          </div>
+          <button
+            disabled={loading}
+            className="w-full  flex  mb:flex-col items-center gap-[10px] px-[20px] py-[20px]"
+          >
+            <div className="pc:w-2/12 w-full flex items-center font-nunito text-[0.9rem] ">
               <span>Chọn nghành hàng</span>
             </div>
-            <div className="w-10/12 flex items-center  ">
+            <div className="pc:w-10/12  w-full  flex items-center  ">
               <div
                 className={`w-full flex items-center  h-[42px] rounded-[5px] cursor-pointer ${
                   isDarkMode ? "border-[1px]" : "bg-dark-400"
                 }`}
                 onClick={() => setIsModalOpen(true)}
               >
-                <div className="w-full flex px-[10px] font-nunito text-[0.9rem]">
+                <div className="w-full flex px-[10px] font-nunito text-[0.9rem] truncate">
                   {selectedCategory && <p>{selectedCategory.name}</p>}
                 </div>
                 <div className="flex items-center justify-center text-[0.8rem] w-[50px] cursor-pointer border-l-[1px] h-full">
@@ -684,7 +1133,7 @@ const AddProduct = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </button>
         </div>
 
         {isModalOpen && (
@@ -719,7 +1168,8 @@ const AddProduct = () => {
                     >
                       <input
                         type="text"
-                        className="w-full  p-2 rounded text-[0.9rem] outline-none bg-transparent"
+                        disabled={loading}
+                        className="w-full  py-[8px] px-[8px]  rounded text-[0.85rem] outline-none bg-transparent"
                         placeholder={`Nhập ${attr.attribute_value}`}
                         onChange={(e) =>
                           handleAttributeChange(
@@ -742,78 +1192,145 @@ const AddProduct = () => {
       )}
       <div className="w-full mt-[20px]">
         <ContainerModeLayer1>
+          <div className="w-full px-[20px] pt-[20px] pb-[10px] font-nunito text-[1.2rem] font-bold">
+            <h1>Thông tin bán hàng</h1>
+          </div>
           <div className="w-full p-4">
             {categories.map((category, catIndex) => (
-              <div key={catIndex} className="mb-4 p-4 border rounded-lg">
-                <label className="block font-semibold">
-                  Phân loại {catIndex + 1}
-                </label>
-                <input
-                  type="text"
-                  value={category.product_category_group_name}
-                  onChange={(e) =>
-                    handleCategoryChange(catIndex, e.target.value)
-                  }
-                  className="w-full p-2 border rounded-md"
-                  maxLength={14}
-                />
-                <p className="text-sm text-gray-500 text-right">
-                  {category.product_category_group_name.length}/14
-                </p>
-                {category.error && (
-                  <p className="text-red-500 text-sm">{category.error}</p>
-                )}
-
-                <h3 className="mt-2 font-semibold">Tùy chọn</h3>
-                {category.options.map((option, optIndex) => (
-                  <div key={optIndex} className="flex items-center gap-2">
+              <div
+                key={catIndex}
+                className={`mb-4 p-4  rounded-[5px] ${
+                  isDarkMode ? "border-[1px]" : "bg-dark-300"
+                }`}
+              >
+                <div className="w-full flex items-center justify-between">
+                  <label className="block font-nunito font-semibold text-[0.9rem]">
+                    Phân loại {catIndex + 1}
+                  </label>
+                </div>
+                <div className="w-full flex items-center">
+                  <div
+                    className={`w-full flex items-center  rounded-[5px]  px-[10px] ${
+                      isDarkMode ? "border-[1px]" : "bg-dark-400"
+                    }  `}
+                  >
                     <input
                       type="text"
-                      value={option}
+                      disabled={loading}
+                      value={category.product_category_group_name}
+                      placeholder={`Nhập phân loại ${catIndex + 1}`}
                       onChange={(e) =>
-                        handleOptionChange(catIndex, optIndex, e.target.value)
+                        handleCategoryChange(catIndex, e.target.value)
                       }
-                      className={`w-full p-2 border rounded-md ${
-                        category.error ? "border-red-500" : ""
-                      }`}
-                      maxLength={20}
+                      className="w-full py-[10px] px-[5px] bg-transparent outline-none text-[0.85rem]"
+                      maxLength={14}
                     />
-                    <p className="text-sm text-gray-500">{option.length}/20</p>
-                    {category.options.length > 1 && (
-                      <button
-                        onClick={() => handleRemoveOption(catIndex, optIndex)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        ❌
-                      </button>
-                    )}
+                    <p className="text-sm text-gray-500 text-right">
+                      {category.product_category_group_name.length}/14
+                    </p>
                   </div>
-                ))}
-
-                <button
-                  onClick={() => handleAddOption(catIndex)}
-                  className="mt-2 p-2 bg-blue-500 text-white rounded-md"
-                >
-                  + Thêm Tùy Chọn
-                </button>
+                  {categories.length > 1 && (
+                    <button
+                      disabled={loading}
+                      onClick={() => handleRemoveCategory(catIndex)}
+                      className="ml-2 p-1 text-red-500 hover:text-red-700"
+                    >
+                      <i className="fa-regular fa-trash-can"></i>
+                    </button>
+                  )}
+                </div>
+                {category.error && (
+                  <p className="text-red-500 text-[0.8rem]">{category.error}</p>
+                )}
+                <div className="w-full flex items-center justify-between py-[10px]">
+                  <h3 className=" font-nunito font-semibold text-[0.9rem]">
+                    Tùy chọn
+                  </h3>
+                </div>
+                <div className="w-full flex flex-wrap ">
+                  {category.options.map((option, optIndex) => (
+                    <div
+                      key={optIndex}
+                      className="w-6/12 flex items-center gap-2 pr-[10px] mt-[10px]"
+                    >
+                      <div
+                        className={`w-full flex items-center  rounded-[5px]  px-[10px] ${
+                          isDarkMode ? "border-[1px]" : "bg-dark-400"
+                        }  ${category.error ? "border-red-500" : ""}`}
+                      >
+                        <input
+                          type="text"
+                          disabled={loading}
+                          value={option}
+                          placeholder={`Nhập tùy chọn ${optIndex + 1}`}
+                          onChange={(e) =>
+                            handleOptionChange(
+                              catIndex,
+                              optIndex,
+                              e.target.value
+                            )
+                          }
+                          className={`w-full py-[8px]  text-[0.9rem] outline-none bg-transparent`}
+                          maxLength={20}
+                        />
+                        <p
+                          className={`text-[0.8rem]  ${
+                            isDarkMode ? " text-dark-300" : "text-dark-600"
+                          }`}
+                        >
+                          {option.length}/20
+                        </p>
+                      </div>
+                      {category.options.length > 1 && (
+                        <button
+                          disabled={loading}
+                          onClick={() => handleRemoveOption(catIndex, optIndex)}
+                          className=" text-red-500 flex items-center justify-center p-[5px] hover:text-red-700 cursor-pointer"
+                        >
+                          <i className="fa-regular fa-trash-can"></i>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="w-full flex items-center mt-[20px]">
+                    <button
+                      disabled={loading}
+                      onClick={() => handleAddOption(catIndex)}
+                      className={`px-[20px]  py-[5px] rounded-[5px] flex items-center justify-center   ${
+                        isDarkMode ? "border-[1px]" : "bg-dark-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-[10px] ">
+                        <span className="text-[0.9rem] font-nunito">
+                          Thêm tùy chọn
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
 
             {categories.length < 2 && (
               <button
+                disabled={loading}
                 onClick={handleAddCategory}
-                className="mt-4 p-2 bg-green-500 text-white rounded-md"
+                className=" px-[10px] py-[5px] font-nunito text-[0.9rem] bg-blue-600 text-white rounded-md cursor-pointer"
               >
-                + Thêm Phân Loại
+                Thêm Phân Loại
               </button>
             )}
 
             {tableData.length > 0 && (
-              <div className="mt-6">
+              <div className="mt-6 ">
                 <h3 className="text-lg font-semibold mb-2">Bảng phân loại</h3>
-                <table className="w-full border-collapse border border-gray-300">
+                <table className="w-full border-collapse border rounded-[5px] border-gray-300 ">
                   <thead>
-                    <tr className="bg-gray-200">
+                    <tr
+                      className={` ${
+                        isDarkMode ? "bg-dark-900" : "bg-dark-400 "
+                      }`}
+                    >
                       <th className="border border-gray-300 p-2">
                         {categories[0]?.product_category_group_name ||
                           "Phân loại 1"}
@@ -846,9 +1363,10 @@ const AddProduct = () => {
                               }
                               className="border  border-gray-300 p-2 text-center font-medium"
                             >
-                              <div className="flex flex-col justify-center items-center">
-                                <label className="cursor-pointer relative">
+                              <div className="flex flex-col justify-center items-center relative">
+                                <label className="cursor-pointer relative z-10">
                                   <input
+                                    disabled={loading}
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
@@ -856,35 +1374,41 @@ const AddProduct = () => {
                                       handleImageChange(e, row.first_category)
                                     }
                                   />
-                                  <div className="w-[50px] h-[50px] border-[1px] rounded-[5px] flex items-center justify-center text-[1.2rem] cursor-pointer">
+                                  <div className="w-[60px] h-[60px] border-[1px] rounded-[5px] flex items-center justify-center text-[1.2rem] cursor-pointer">
                                     {imagesOptionPreview[row.first_category] ? (
-                                      <>
-                                        <img
-                                          src={
-                                            imagesOptionPreview[
-                                              row.first_category
-                                            ]
-                                          }
-                                          alt="preview"
-                                          className="w-full h-full object-cover rounded-[5px]"
-                                        />
-                                        <div
-                                          className="absolute top-[-8px] right-[-8px] bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveImageOption(
-                                              row.first_category
-                                            );
-                                          }}
-                                        >
-                                          ✕
-                                        </div>
-                                      </>
+                                      <img
+                                        src={
+                                          imagesOptionPreview[
+                                            row.first_category
+                                          ]
+                                        }
+                                        alt="preview"
+                                        className="w-full h-full object-cover rounded-[5px]"
+                                      />
                                     ) : (
                                       <i className="fa-solid fa-image"></i>
                                     )}
                                   </div>
                                 </label>
+
+                                {imagesOptionPreview[row.first_category] && (
+                                  <button
+                                    disabled={loading}
+                                    className="absolute top-0 right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center z-20 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveImageOption(
+                                        row.first_category
+                                      );
+                                    }}
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+
+                                <p className="font-nunito font-normal text-[0.85rem] py-[2px]">
+                                  {row.first_category}
+                                </p>
                               </div>
                             </td>
                           ) : null}
@@ -895,25 +1419,43 @@ const AddProduct = () => {
                           )}
                           {/* Ô nhập giá */}
                           <td className="border border-gray-300 p-2 text-center">
-                            <input
-                              type="number"
-                              value={row.price}
-                              onChange={(e) =>
-                                handlePriceChange(index, e.target.value)
-                              }
-                              className="w-full border rounded-md p-1"
-                            />
+                            <div
+                              className={`w-full flex rounded-[5px] ${
+                                isDarkMode ? "border-[1px] " : "bg-dark-400"
+                              }`}
+                            >
+                              <input
+                                disabled={loading}
+                                type="number"
+                                min="0"
+                                value={row.price}
+                                placeholder="Nhập giá của tùy chọn này"
+                                onChange={(e) =>
+                                  handlePriceChange(index, e.target.value)
+                                }
+                                className="w-full px-[5px] py-[5px] text-[0.9rem] bg-transparent outline-none"
+                              />
+                            </div>
                           </td>
                           {/* Ô nhập kho hàng */}
                           <td className="border border-gray-300 p-2 text-center">
-                            <input
-                              type="number"
-                              value={row.quantity}
-                              onChange={(e) =>
-                                handleQuantityChange(index, e.target.value)
-                              }
-                              className="w-full border rounded-md p-1"
-                            />
+                            <div
+                              className={`w-full flex rounded-[5px] ${
+                                isDarkMode ? "border-[1px] " : "bg-dark-400"
+                              }`}
+                            >
+                              <input
+                                disabled={loading}
+                                type="number"
+                                min="0"
+                                value={row.quantity}
+                                placeholder="Nhập số lượng hàng tùy chọn này có"
+                                onChange={(e) =>
+                                  handleQuantityChange(index, e.target.value)
+                                }
+                                className="w-full px-[5px] py-[5px] text-[0.9rem] bg-transparent outline-none"
+                              />
+                            </div>
                           </td>
                         </tr>
                       );
@@ -927,16 +1469,174 @@ const AddProduct = () => {
       </div>
       <div className="w-full mt-[20px]">
         <ContainerModeLayer1>
-          {" "}
+          <div className="w-full flex flex-col justify-end py-[20px] px-[20px]">
+            <div className="w-full text-[1.2rem] font-nunito font-bold pb-[10px]">
+              <h1>Thông tin vận chuyển</h1>
+            </div>
+            <div className="w-full flex flex-col py-[20px] font-nunito">
+              <div className="font-bold pb-[10px]">
+                <span>Cân nặng ( sau khi đóng gói )</span>
+              </div>
+              <div className="pc:w-4/12 w-full pr-[10px]">
+                <div
+                  className={`w-full flex items-center gap-[5px]   rounded-[5px] ${
+                    isDarkMode ? "border-[1px]" : "bg-dark-400"
+                  }`}
+                >
+                  <input
+                    className="w-full border-none outline-none bg-transparent pl-[10px] py-[8px] text-[0.8rem]"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Cân nặng"
+                    value={shippingWeigth}
+                    disabled={loading}
+                    onChange={handleChangeShippingWeigth}
+                  />
+                  <div className="flex items-center justify-center border-l-[1px] px-[15px] ">
+                    <span>g</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="w-full flex flex-col py-[20px] mb-[20px] font-nunito">
+              <div className="font-bold pb-[10px]">
+                <span>
+                  Kích thước đóng gói (Phí vận chuyển thực tế sẽ thay đổi nếu
+                  bạn nhập sai kích thước)
+                </span>
+              </div>
+              <div className="w-full flex items-center flex-wrap ">
+                <div className="pc:w-3/12 w-full min-w-[300px] mr-[10px] mt-[10px]">
+                  <div
+                    className={`w-full flex items-center gap-[5px]   rounded-[5px] ${
+                      isDarkMode ? "border-[1px]" : "bg-dark-400"
+                    }`}
+                  >
+                    <input
+                      className="w-full border-none outline-none bg-transparent pl-[10px] py-[8px] text-[0.8rem]"
+                      type="text"
+                      inputMode="numeric"
+                      value={shippingSize.width}
+                      disabled={loading}
+                      name="width"
+                      placeholder="Chiều rộng"
+                      onChange={handleChangeShippingSize}
+                    />
+                    <div className="flex items-center justify-center border-l-[1px] px-[15px] ">
+                      <span>cm</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-[20px] h-[20px] flex items-center justify-center mt-[10px] pr-[10px]">
+                  <i className="fa-solid fa-xmark"></i>
+                </div>
+                <div className="pc:w-3/12 w-full min-w-[300px] mr-[10px] mt-[10px]">
+                  <div
+                    className={`w-full flex items-center gap-[5px]   rounded-[5px] ${
+                      isDarkMode ? "border-[1px]" : "bg-dark-400"
+                    }`}
+                  >
+                    <input
+                      className="w-full border-none outline-none bg-transparent pl-[10px] py-[8px] text-[0.8rem]"
+                      type="text"
+                      inputMode="numeric"
+                      disabled={loading}
+                      value={shippingSize.height}
+                      name="height"
+                      placeholder="Chiều dài"
+                      onChange={handleChangeShippingSize}
+                    />
+                    <div className="flex items-center justify-center border-l-[1px] px-[15px] ">
+                      <span>cm</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-[20px] h-[20px] flex items-center justify-center mt-[10px] pr-[10px]">
+                  <i className="fa-solid fa-xmark"></i>
+                </div>
+                <div className="pc:w-3/12 w-full min-w-[300px]  mr-[10px] mt-[10px]">
+                  <div
+                    className={`w-full flex items-center gap-[5px]   rounded-[5px] ${
+                      isDarkMode ? "border-[1px]" : "bg-dark-400"
+                    }`}
+                  >
+                    <input
+                      disabled={loading}
+                      className="w-full border-none outline-none bg-transparent pl-[10px] py-[8px] text-[0.8rem]"
+                      type="number"
+                      min={0}
+                      value={shippingSize.high}
+                      name="high"
+                      placeholder="Chiều cao"
+                      onChange={handleChangeShippingSize}
+                    />
+                    <div className="flex items-center justify-center border-l-[1px] px-[15px] ">
+                      <span>cm</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="w-full flex flex-col gap-[10px]">
+              <div className="w-full font-bold ">
+                <h1>Phí vận chuyển</h1>
+              </div>
+              {shippingType?.map((type) => {
+                const isToggled = toggleButtonShiping[type.id];
+                return (
+                  <div
+                    key={type.id}
+                    className={`w-full flex mb:flex-col items-center gap-[5px] px-[10px] py-[10px] font-nunito  rounded-[5px] ${
+                      isDarkMode ? "border-[1px]" : "bg-dark-400"
+                    }`}
+                  >
+                    <div className="w-full flex mb:flex-col  gap-[10px] text-[0.9rem] px-[10px]">
+                      <div className="w-2/12 mb:w-full font-bold truncate">
+                        {type.name}
+                      </div>
+                      <div className="w-10/12 mb:w-full text-dark-800 truncate">
+                        {type.description}
+                      </div>
+                    </div>
+                    <div className="w-full flex">
+                      <div className="px-[10px] font-bold text-red-500 truncate">
+                        {type.priceAfterCaculate.toLocaleString("vi-VN")}đ
+                      </div>
+                      <div
+                        onClick={() => toggleButtonShippingChange(type)}
+                        className={`w-[38px] h-[22px] min-w-[38px] flex items-center  rounded-full px-[4px] py-[2px] cursor-pointer transition-all relative  ${
+                          isToggled
+                            ? "bg-green-500 text-white"
+                            : "bg-dark-700 text-dark-900"
+                        } shadow-md transition-all duration-300 ease}`}
+                      >
+                        <div
+                          className={`w-[16px] h-[16px]  text-[0.6rem]  rounded-full flex items-center justify-center shadow-md absolute transition-transform duration-300 ${
+                            isToggled
+                              ? "bg-green-200 translate-x-[16px]"
+                              : "bg-dark-200 translate-x-0"
+                          }`}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </ContainerModeLayer1>
+      </div>
+      <div className="w-full mt-[20px]">
+        <ContainerModeLayer1>
           <div className="w-full flex justify-end py-[20px] px-[20px]">
             <button
+              disabled={loading}
               className={`py-[5px] px-[20px] rounded-[5px] flex items-center gap-2 ${
                 loading
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-primary text-light-100"
               }`}
               onClick={handleCreateProduct}
-              disabled={loading}
             >
               {loading && (
                 <svg

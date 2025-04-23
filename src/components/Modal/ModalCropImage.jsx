@@ -2,7 +2,7 @@ import { useState } from "react";
 import Cropper from "react-easy-crop";
 import ModalContainer from "../Modal/ModalContainer";
 
-const ModalCrop = ({ image, onClose, onCropDone }) => {
+const ModalCrop = ({ image, onClose, onCropDone, aspectRatio }) => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedArea, setCroppedArea] = useState(null);
@@ -19,29 +19,29 @@ const ModalCrop = ({ image, onClose, onCropDone }) => {
 
   return (
     <ModalContainer onClose={onClose}>
-      <div className="relative w-full h-[400px]">
+      <div className="relative w-full h-[400px] rounded-[5px] overflow-hidden p-[10px]">
         <Cropper
           image={image}
           crop={crop}
           zoom={zoom}
-          aspect={16 / 9}
+          aspect={aspectRatio}
           onCropChange={setCrop}
           onCropComplete={onCropComplete}
           onZoomChange={setZoom}
         />
       </div>
-      <div className="flex justify-between mt-4">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 bg-gray-400 text-white rounded"
-        >
-          Hủy
-        </button>
+      <div className="w-full  flex flex-col gap-[8px] mt-4 p-[10px]">
         <button
           onClick={handleCropDone}
           className="px-4 py-2 bg-blue-500 text-white rounded"
         >
           Cắt ảnh
+        </button>{" "}
+        <button
+          onClick={onClose}
+          className="px-4 py-2 bg-gray-400 text-white rounded"
+        >
+          Hủy
         </button>
       </div>
     </ModalContainer>

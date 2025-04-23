@@ -1,11 +1,18 @@
 import axios from "axios";
 import { createContext, useReducer, useEffect, useContext } from "react";
-import { authReducer } from "../../reducers/User/AuthReducer";
+import {
+  authReducer,
+  cartReducer,
+  ordersReducer,
+} from "../../reducers/User/AuthReducer";
 import setAuthToken from "../../utils/User/setAuthToken";
 import {
   apiUrl,
+  CANCLE_ORDER,
   LOCAL_STORAGE_TOKEN_NAME,
   LOCAL_STORAGE_USER,
+  SET_ADDRESSES,
+  SET_ALL_CART,
   SET_AUTH,
   SET_AUTH_LOADING,
   SET_AVATAR,
@@ -16,11 +23,21 @@ import {
 export const AuthContext = createContext();
 
 export const AuthContextProvider = ({ children }) => {
-  const [authState, dispatch] = useReducer(authReducer, {
+  const [authState, authDispatch] = useReducer(authReducer, {
     authLoading: true,
     isAuthenticated: false,
     user: null,
     roles: null,
+    addresses: [],
+  });
+
+  const [cartState, cartDispatch] = useReducer(cartReducer, {
+    authLoading: true,
+    carts: [],
+  });
+
+  const [ordersState, orderDispatch] = useReducer(ordersReducer, {
+    orders: [],
   });
 
   const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
@@ -29,10 +46,11 @@ export const AuthContextProvider = ({ children }) => {
     const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
 
     if (!token) {
-      dispatch({
+      authDispatch({
         type: SET_AUTH,
         payload: { isAuthenticated: false, user: null },
       });
+      localStorage.removeItem("userId");
       return;
     }
 
@@ -49,26 +67,29 @@ export const AuthContextProvider = ({ children }) => {
 
       if (response.status >= 200 && response.status < 300) {
         const userData = response.data;
-        dispatch({
+        authDispatch({
           type: SET_AUTH,
           payload: { isAuthenticated: true, user: userData },
         });
-        dispatch({
+        authDispatch({
           type: SET_ROLE,
           payload: userData.roles,
         });
-        return;
+        return { success: true, data: response.data };
       } else {
         throw new Error("Unauthorized");
       }
     } catch (error) {
       localStorage.removeItem(LOCAL_STORAGE_TOKEN_NAME);
-
       setAuthToken(null);
-      dispatch({
+      authDispatch({
         type: SET_AUTH,
         payload: { isAuthenticated: false, user: null },
       });
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
     }
   };
 
@@ -84,26 +105,63 @@ export const AuthContextProvider = ({ children }) => {
         localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, response.data.token);
         localStorage.setItem(LOCAL_STORAGE_USER, response.data.user.id);
         setAuthToken(response.data.token);
-        dispatch({
+        authDispatch({
           type: SET_AUTH,
           payload: { isAuthenticated: true, user: userData },
         });
-        dispatch({
+        authDispatch({
           type: SET_ROLE,
           payload: userData.roles,
         });
-        dispatch({ type: SET_AUTH_LOADING, payload: false });
+        authDispatch({ type: SET_AUTH_LOADING, payload: false });
         await loadUser();
-        return response;
+        return { success: true, message: response.data };
       }
       return response.data;
     } catch (error) {
-      return error.response?.data || { success: false, message: error.message };
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  };
+
+  const fetchAddress = async (userId) => {
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/v1/user_village/get_all_address/${userId} `,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        authDispatch({
+          type: SET_ADDRESSES,
+          payload: response.data.addressResponses,
+        });
+        return { success: true, data: response.data.addressResponses };
+      }
+      return { success: false, message: response.message };
+    } catch (error) {
+      return { success: false, error: error };
     }
   };
 
   useEffect(() => {
-    loadUser();
+    const fectchAuth = async () => {
+      try {
+        const response = await loadUser();
+        if (response.success) {
+          await getCart(response.data.id);
+          await fetchAddress(response.data.id);
+        }
+      } catch (error) {
+        console.log(error.message);
+      }
+    };
+    fectchAuth();
   }, []);
 
   const registerUser = async (userForm) => {
@@ -118,7 +176,10 @@ export const AuthContextProvider = ({ children }) => {
       }
       return { success: false, message: response };
     } catch (error) {
-      return error.response?.data || { success: false, message: error.message };
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
     }
   };
 
@@ -126,11 +187,11 @@ export const AuthContextProvider = ({ children }) => {
     localStorage.removeItem(LOCAL_STORAGE_TOKEN_NAME);
     localStorage.removeItem("user");
     setAuthToken(null);
-    dispatch({
+    authDispatch({
       type: SET_AUTH,
       payload: { isAuthenticated: false, user: null },
     });
-    dispatch({ type: SET_ROLE, payload: null });
+    authDispatch({ type: SET_ROLE, payload: null });
   };
 
   const updateUserInfo = async (userId, updatedData) => {
@@ -152,20 +213,27 @@ export const AuthContextProvider = ({ children }) => {
       if (response.status >= 200 && response.status < 300) {
         const updatedUser = response.data;
 
-        dispatch({ type: UPDATE_AUTH, payload: updatedUser });
+        authDispatch({ type: UPDATE_AUTH, payload: updatedUser });
         return {
           success: true,
+          data: updatedUser,
           message: "Cập nhật thông tin người dùng thành công",
         };
       } else {
         throw new Error("Cập nhật thông tin thất bại");
       }
     } catch (error) {
-      return error.response?.data || { success: false, message: error.message };
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    } finally {
+      authDispatch({ type: SET_AUTH_LOADING, payload: false });
     }
   };
 
   const registerShop = async (userId, formRegisterData) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
     try {
       const response = await axios.post(
         `${apiUrl}/api/v1/shop/register/${userId}`,
@@ -179,16 +247,22 @@ export const AuthContextProvider = ({ children }) => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        dispatch({ type: SET_ROLE, payload: ["user", "shop"] });
+        authDispatch({ type: SET_ROLE, payload: ["user", "shop"] });
         return { success: true, message: response.data.message };
       }
       return { success: false, message: response.data.message };
     } catch (error) {
-      return error.response?.data || { success: false, message: error.message };
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    } finally {
+      authDispatch({ type: SET_AUTH_LOADING, payload: false });
     }
   };
 
   const sendCodeToEmail = async (userId, email) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
     try {
       const response = await axios.get(
         `${apiUrl}/api/v1/user_code/send_code?userId=${userId}&email=${email}`,
@@ -205,16 +279,14 @@ export const AuthContextProvider = ({ children }) => {
       }
       return response;
     } catch (error) {
-      return error.response?.data || { success: false, message: error.message };
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
     }
   };
 
   const confirmEmail = async (userId, payload) => {
-    if (!payload) {
-      console.log("Không có code");
-      return { success: false, message: "Không có code" };
-    }
-
     try {
       const response = await axios.post(
         `${apiUrl}/api/v1/user_code/user/confirm_code/${userId}`,
@@ -226,17 +298,17 @@ export const AuthContextProvider = ({ children }) => {
       }
       return { success: false, message: response.data.message };
     } catch (error) {
-      return error.response?.data || { success: false, message: error.message };
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
     }
   };
 
   const uploadAvatar = async (userId, imageFile) => {
-    if (!imageFile) return { success: false, message: "Chưa chọn ảnh" };
-
-    console.log("Uploading avatar:", imageFile);
-
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
     try {
-      dispatch({ type: SET_AUTH_LOADING, payload: true });
+      authDispatch({ type: SET_AUTH_LOADING, payload: true });
 
       const formData = new FormData();
       formData.append("file", imageFile);
@@ -253,16 +325,18 @@ export const AuthContextProvider = ({ children }) => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        dispatch({ type: SET_AVATAR, payload: response.data.avatar_url });
+        authDispatch({ type: SET_AVATAR, payload: response.data.avatar_url });
         return { success: true, data: response.data };
       } else {
         throw new Error("Cập nhật ảnh đại diện thất bại");
       }
     } catch (error) {
-      console.error("Lỗi upload ảnh:", error);
-      return error.response?.data || { success: false, message: error.message };
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
     } finally {
-      dispatch({ type: SET_AUTH_LOADING, payload: false });
+      authDispatch({ type: SET_AUTH_LOADING, payload: false });
     }
   };
 
@@ -276,7 +350,10 @@ export const AuthContextProvider = ({ children }) => {
       }
       return { success: false, message: response.data.message };
     } catch (error) {
-      return error.response?.data || { success: false, message: error.message };
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
     }
   };
 
@@ -291,23 +368,223 @@ export const AuthContextProvider = ({ children }) => {
       }
       return { success: false, message: response.data.message };
     } catch (error) {
-      return error.response?.data || { success: false, message: error.message };
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
     }
   };
 
+  const placeOrder = async (formData) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+    try {
+      const response = await axios.post(`${apiUrl}/api/v1/order`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true, data: response.data };
+      }
+      return { success: false, message: response.data.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  };
+
+  const cancelOrder = async (userId, orderId) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/v1/order/cancel_order?userId=${userId}&orderId=${orderId}`,
+
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        orderDispatch({ type: CANCLE_ORDER, payload: { orderId } });
+        return { success: true, data: response.data };
+      }
+      return { success: false, message: response.data.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  };
+
+  const getCart = async (userId) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+    try {
+      const response = await axios.get(`${apiUrl}/api/v1/cart/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      cartDispatch({ type: SET_ALL_CART, payload: response.data });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  };
+
+  const addProductToCart = async (formData) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+    try {
+      const response = await axios.post(
+        `${apiUrl}/api/v1/cart/add_product_to_cart`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        await getCart(authState?.user?.id);
+        return { success: true, data: response.data };
+      }
+      return { success: false, message: response.data.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  };
+
+  const deleteProductFromCart = async (userId, cartItemId) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+    try {
+      const response = await axios.delete(
+        `${apiUrl}/api/v1/cart?userId=${userId}&cartItemId=${cartItemId}`,
+
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        await getCart(authState?.user?.id);
+        return { success: true, data: response.data };
+      }
+      return { success: false, message: response.data.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  };
+
+  const getOrders = async (userId, status) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/v1/order/get_order_by_user_id_and_status?userId=${userId}&status=${status}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true, data: response.data };
+      }
+      return { success: true, message: response.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  };
+
+  const createFeedBack = async (formData) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+    try {
+      const response = await axios.post(
+        `${apiUrl}/api/v1/feedback/create_feedback`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true, data: response.data };
+      }
+      return { success: true, message: response.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  };
+
+  const updateFeedBack = async (userId, formData) => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+    try {
+      const response = await axios.put(
+        `${apiUrl}http://localhost:8080/api/v1/feedback/update_feedback/${userId}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true, data: response.data };
+      }
+      return { success: true, message: response.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  };
+
+  useEffect;
+
   const authContextData = {
+    authState,
+    cartState,
+    ordersState,
     loadUser,
     loginUser,
     registerUser,
     logoutUser,
     updateUserInfo,
-    authState,
     registerShop,
     sendCodeToEmail,
     confirmEmail,
     uploadAvatar,
     sendMailForRegister,
     confirmCodeMailForRegister,
+    addProductToCart,
+    placeOrder,
+    getCart,
+    getOrders,
+    deleteProductFromCart,
+    cancelOrder,
+    createFeedBack,
+    updateFeedBack,
+    fetchAddress,
   };
 
   return (

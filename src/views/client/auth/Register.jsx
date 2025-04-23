@@ -36,14 +36,13 @@ const Register = () => {
     confirmPassword: "",
   });
 
-  console.log(formData);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (e) => {
+    e.preventDefault();
     const { account, password, confirmPassword } = formData;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -83,7 +82,7 @@ const Register = () => {
     }
 
     if (emailRegex.test(account.trim())) {
-      navigate("/confirmcode", {
+      navigate("/sendcode", {
         state: { email: account.trim(), password: password.trim() },
       });
       return;
@@ -136,7 +135,10 @@ const Register = () => {
               Vui lòng nhập thông tin đăng ký
             </p>
           </div>
-          <div className="flex flex-col mt-[20px] gap-[20px]">
+          <form
+            onSubmit={handleRegister}
+            className="flex flex-col mt-[20px] gap-[20px]"
+          >
             <div
               className={`w-full flex items-center ${
                 isDarkMode ? "border-[1px]" : "bg-dark-200"
@@ -193,7 +195,7 @@ const Register = () => {
               </div>
               <input
                 className="w-full bg-transparent outline-none  py-[10px] rounded-[5px] text-[0.9rem]"
-                type={`${showConfirmPass ? "email" : "password"}`}
+                type={`${showConfirmPass ? "text" : "password"}`}
                 placeholder="Nhập lại mật khẩu"
                 name="confirmPassword"
                 value={formData.confirmPassword}
@@ -234,12 +236,12 @@ const Register = () => {
               </span>
             </div>
             <button
+              type="submit"
               className="w-full outline-none px-[10px] py-[8px] rounded-[5px]  text-[1rem] text-white font-bold bg-primary"
-              onClick={handleRegister}
             >
               Đăng ký
             </button>
-          </div>
+          </form>
           <div className="w-full flex  mt-[20px] gap-[20px] border-t-[1px] border-dashed py-[20px] ">
             <div
               className={`w-6/12 flex items-center justify-center  py-[5px] rounded-[5px] font-bold gap-[10px] cursor-pointer ${

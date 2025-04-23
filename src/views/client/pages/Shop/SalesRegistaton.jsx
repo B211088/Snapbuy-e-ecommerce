@@ -16,10 +16,12 @@ const SalesRegistaton = () => {
     }
   });
   return (
-    <LayoutModeBackground>
+    <div className="w-full">
       <HeaderFlexibleView title={"Đăng ký trở thành người bán"} />
-      <Outlet />
-    </LayoutModeBackground>
+      <LayoutModeBackground>
+        <Outlet />
+      </LayoutModeBackground>
+    </div>
   );
 };
 

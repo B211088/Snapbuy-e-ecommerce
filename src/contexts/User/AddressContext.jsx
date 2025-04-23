@@ -21,7 +21,6 @@ export const AddressProvider = ({ children }) => {
     provinces: [],
     districts: [],
     villages: [],
-    addresses: [],
   });
 
   const {
@@ -33,7 +32,10 @@ export const AddressProvider = ({ children }) => {
   const fetchProvinces = async () => {
     try {
       const response = await axios.get(
-        `${apiUrl}/api/v1/user_village/get_all_provinces`
+        `${apiUrl}/api/v1/user_village/get_all_provinces`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       if (response.status >= 200 && response.status < 300) {
         dispatch({ type: SET_PROVINCES, payload: response.data });
@@ -76,36 +78,8 @@ export const AddressProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchProvinces();
-      fetchAddress(user.id);
-    }
-  }, [isAuthenticated]);
-
-  const fetchAddress = async (userId) => {
-    if (roles?.includes("admin")) return;
-    try {
-      const response = await axios.get(
-        `${apiUrl}/api/v1/user_village/get_all_address/${userId} `,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (response.status >= 200 && response.status < 300) {
-        dispatch({
-          type: SET_ADDRESSES,
-          payload: response.data.addressResponses,
-        });
-        return response.data.addressResponses;
-      }
-      return response;
-    } catch (error) {
-      return { success: false, error: error };
-    }
-  };
+    fetchProvinces();
+  }, []);
 
   const addAddressReceiver = async (addressData) => {
     try {
@@ -186,7 +160,7 @@ export const AddressProvider = ({ children }) => {
         fetchProvinces,
         fetchDistricts,
         addAddressReceiver,
-        fetchAddress,
+
         updateAddressReceiver,
         deleteAddressReceiver,
       }}

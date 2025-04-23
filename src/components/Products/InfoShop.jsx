@@ -1,5 +1,3 @@
-import React from "react";
-import sanpham3 from "../../assets/images/sanpham3.jpg";
 import Rank from "../features/Rank";
 const InfoShop = ({ info }) => {
   return (
