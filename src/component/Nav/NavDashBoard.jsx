@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useTheme } from "../../provider/ThemeProvider";
-import NavItem from "./NavItem";
+import NavItem from "../Feature/NavItem";
 
 const NavDashboard = ({ navList, heightTop }) => {
   const { isDarkMode } = useTheme();

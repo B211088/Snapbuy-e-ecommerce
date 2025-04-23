@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTheme } from "../../provider/ThemeProvider";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+
 const NavItem = ({ payload, currentPath }) => {
   const { label, menuId, items, icon, path } = payload;
   const { isDarkMode } = useTheme();
