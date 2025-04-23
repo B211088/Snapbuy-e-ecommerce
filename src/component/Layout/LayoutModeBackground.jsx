@@ -1,4 +1,4 @@
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 
 const LayoutModeBackground = ({ children }) => {
   const { isDarkMode } = useTheme();

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import ModalContainer from "./ModalContainer";
 import InputField from "./InputField";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import { useNotify } from "../Notify/NotifyModal";
 
 import { useAdminManager } from "../../contexts/AdminContext";

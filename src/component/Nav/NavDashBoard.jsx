@@ -1,5 +1,5 @@
 import { useLocation } from "react-router-dom";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import NavItem from "./NavItem";
 
 const NavDashboard = ({ navList, heightTop }) => {

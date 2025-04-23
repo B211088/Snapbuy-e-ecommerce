@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import { useNotify } from "../Notify/NotifyModal";
 import { useConfirm } from "../Notify/ConfirmModal";
 import ContainerModeLayer1 from "../Container/ContainerModeLayer1";

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ExtentionsUser from "./ExtentionsUser";
 import { useAuth } from "../../contexts/AuthContext";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 
 const User = () => {
   const { isDarkMode } = useTheme();

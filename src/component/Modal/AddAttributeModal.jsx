@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import ModalContainer from "./ModalContainer";
 import { useAdminManager } from "../../contexts/AdminContext";
 import { useNotify } from "../Notify/NotifyModal";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 
 const AddAttributeModal = ({ onClose }) => {
   const { isDarkMode } = useTheme();

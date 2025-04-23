@@ -1,4 +1,4 @@
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 
 const ModeLayoutButton = () => {
   const { isDarkMode, toggleTheme } = useTheme();

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import { useNotify } from "../Notify/NotifyModal";
 import { useConfirm } from "../Notify/ConfirmModal";
 import { useLocation, useNavigate } from "react-router-dom";

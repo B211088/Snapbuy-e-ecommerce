@@ -4,7 +4,7 @@ import { useAdminManager } from "../../contexts/AdminContext";
 import UpdateAttributeModal from "../Modal/UpdateAttributeModal";
 import { useNotify } from "../Notify/NotifyModal";
 import AddAttributeModal from "../Modal/AddAttributeModal";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import ActionButton from "../Button/ActionButton";
 
 const AttributeManager = () => {

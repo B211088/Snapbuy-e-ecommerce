@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import logo_snapbuy from "../../assets/images/logo_snapbuy.png";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import { useAuth } from "../../contexts/AuthContext";
 import HeaderFlexibleView from "../../component/Header/HeaderFlexibleView";
 import { useNotify } from "../../component/Notify/NotifyModal";

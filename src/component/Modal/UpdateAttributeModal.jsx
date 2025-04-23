@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import InputField from "./InputField";
 import ModalContainer from "./ModalContainer";
 import { useNotify } from "../Notify/NotifyModal";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import { useAdminManager } from "../../contexts/AdminContext";
 
 const UpdateAttributeModal = ({ attribute, onCloseModal }) => {

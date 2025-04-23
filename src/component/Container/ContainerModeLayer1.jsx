@@ -1,5 +1,5 @@
 import React from "react";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 
 const ContainerModeLayer1 = ({ children }) => {
   const { isDarkMode } = useTheme();

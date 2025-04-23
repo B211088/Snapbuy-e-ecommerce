@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ContainerModeLayer1 from "../Container/ContainerModeLayer1";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import { useConfirm } from "../Notify/ConfirmModal";
 import { useNotify } from "../Notify/NotifyModal";
 

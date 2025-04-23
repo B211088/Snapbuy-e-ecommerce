@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 
 const InputField = ({ payload, onChange }) => {
   const { name, value, placeholder, type, required, disabled } = payload;

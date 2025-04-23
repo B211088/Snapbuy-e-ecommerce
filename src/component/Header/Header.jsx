@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import { useAuth } from "../../contexts/AuthContext";
 import logo from "../../assets/images/logo_snapbuy.png";
 import ModeLayoutButton from "../Button/ModeLayoutButton";

@@ -1,5 +1,5 @@
 import React from "react";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import logoSnapbuy from "../../assets/images/logo_snapbuy.png";
 import ModeLayoutButton from "../Button/ModeLayoutButton";
 import { Link } from "react-router-dom";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTheme } from "../../Provider/ThemeProvider";
+import { useTheme } from "../../provider/ThemeProvider";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 const NavItem = ({ payload, currentPath }) => {
